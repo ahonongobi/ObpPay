@@ -121,7 +121,7 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
 
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const OtpScreen()),
+                      MaterialPageRoute(builder: (_) => const OtpScreen(purpose: "reset")),
                     );
                   },
                   style: ElevatedButton.styleFrom(

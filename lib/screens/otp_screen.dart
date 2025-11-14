@@ -3,11 +3,14 @@ import 'dart:async';
 import 'package:obppay/themes/app_colors.dart';
 
 class OtpScreen extends StatefulWidget {
-  const OtpScreen({super.key});
+  final String purpose; // "register" or "reset"
+
+  const OtpScreen({super.key, required this.purpose});
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
 }
+
 
 class _OtpScreenState extends State<OtpScreen> {
   List<String> code = ["", "", "", ""];
@@ -58,6 +61,24 @@ class _OtpScreenState extends State<OtpScreen> {
 
   bool get isComplete => code.join().length == 4;
 
+  // ------------------------------------------------------
+  // HANDLE OTP SUCCESS BASED ON PURPOSE
+  // ------------------------------------------------------
+  void handleOtpSuccess() {
+    if (widget.purpose == "register") {
+      //Navigator.pushReplacement(
+       // context,
+       // MaterialPageRoute(builder: (_) => const RegisterSuccessScreen()),
+      //);
+    }
+
+    if (widget.purpose == "reset") {
+      //Navigator.pushReplacement(
+        //context,
+        //MaterialPageRoute(builder: (_) => const NewPasswordScreen()),
+      //);
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(

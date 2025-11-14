@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:obppay/screens/ForgetPasswordScreen.dart';
 import 'package:obppay/screens/main_layout.dart';
+import 'package:obppay/screens/regsiter_screen.dart';
 import 'package:obppay/themes/app_colors.dart';
 import 'dashboard_screen.dart';
 
@@ -146,16 +148,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 15),
 
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  "Mot de passe oublié ?",
-                  style: TextStyle(
-                    color: AppColors.primaryIndigo,
-                    fontWeight: FontWeight.w600,
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ForgetPasswordScreen()),
+                  );
+                },
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    "Mot de passe oublié ?",
+                    style: TextStyle(
+                      color: AppColors.primaryIndigo,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
+
 
               const SizedBox(height: 30),
 
@@ -195,7 +206,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: OutlinedButton(
                   onPressed: () {
                     // Go to Register
-                    Navigator.pushNamed(context, "/register");
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                    );
                   },
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(

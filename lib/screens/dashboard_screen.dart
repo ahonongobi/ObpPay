@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:obppay/screens/QRScan_screen.dart';
 import 'package:obppay/screens/deposit_screen.dart';
 import 'package:obppay/screens/main_layout.dart';
 import 'package:obppay/screens/marketplace_screen.dart';
@@ -23,20 +24,36 @@ class DashboardScreen extends StatelessWidget {
           ),
         ),
         leading: IconButton(
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const QRScanScreen()),
+            );
+          },
           icon: const Icon(Icons.qr_code_scanner,
               size: 26, color: Colors.white),
         ),
-        actions: const [
+        actions: [
           Padding(
-            padding: EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              radius: 20,
-              backgroundColor: Colors.white,
-              child: Icon(Icons.person, color: Colors.black),
+            padding: const EdgeInsets.only(right: 16),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const MainLayout(initialIndex: 4),
+                  ),
+                );
+              },
+              child: const CircleAvatar(
+                radius: 20,
+                backgroundColor: Colors.white,
+                child: Icon(Icons.person, color: Colors.black),
+              ),
             ),
           ),
         ],
+
       ),
 
       // ---------------- BODY ----------------
@@ -86,7 +103,7 @@ class DashboardScreen extends StatelessWidget {
                       const SizedBox(height: 4),
 
                       const Text(
-                        "1 250 000 XOF",
+                        "12 250 000 XOF",
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 26,
@@ -147,8 +164,16 @@ class DashboardScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
+                      //color: Color(0xFF2A2A2A), // gris foncé pro
                       color: Color(0xFF2A2A2A),
-// gris foncé pro
+
+                      shadows: [
+                        Shadow(
+                          color: Colors.black26,
+                          blurRadius: 4,
+                          offset: Offset(0, 1),
+                        )
+                      ],
                     ),
                   ),
                 ),

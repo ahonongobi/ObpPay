@@ -3,7 +3,7 @@ import 'package:obppay/themes/app_colors.dart';
 
 final ThemeData darkTheme = ThemeData(
   brightness: Brightness.dark,
-  fontFamily: 'Inter',
+  fontFamily: "SFPro",
 
 
   // --- MAIN COLORS ---

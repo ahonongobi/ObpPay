@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:obppay/providers/user_provider.dart';
 import 'package:obppay/screens/splash_screen.dart';
 import 'package:obppay/themes/light_theme.dart';
 import 'package:provider/provider.dart';
@@ -7,8 +8,11 @@ import 'themes/dark_theme.dart';
 
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()), // ✅ Add this
+      ],
       child: const MyApp(),
     ),
   );
