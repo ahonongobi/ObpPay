@@ -235,6 +235,10 @@ MIT License © 2025 OBPPay
 
 ---
 
+
+
+```
+
 ## 📱 Screenshots
 
 ### Dashboard
@@ -245,5 +249,3 @@ MIT License © 2025 OBPPay
 
 ### Loan Request Screen
 <img src="assets/screenshots/loan.png" width="300">
-
-```
