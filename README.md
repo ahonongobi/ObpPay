@@ -1,9 +1,3 @@
-
----
-
-# 🟦 **README.md — OBPPay**
-
-```markdown
 # 💳 OBPPay — Mobile Money & Digital Wallet App
 
 OBPPay is a modern **mobile money & digital wallet application** designed for fast, secure, and intuitive financial operations.  
@@ -16,55 +10,53 @@ Built entirely with **Flutter**, OBPPay provides a smooth user experience and a 
 ## 🚀 Features
 
 ### 🏦 **Wallet & Account Management**
-- View account balance in real time  
-- Recent transactions list  
+- View account balance in real time
+- Recent transactions list
 - Action shortcuts (Deposit, Withdraw, Transfer, Marketplace)
 
 ### 💰 **Money Operations**
-- Deposit & withdraw  
-- Transfer funds to other users (internal money transfer)  
-- All transactions displayed with clean UI components
+- Deposit & withdraw
+- Transfer funds to other users
+- Clean UI for all transaction types
 
 ### 🛒 **Marketplace Module**
-- Browse and buy digital/physical items  
+- Browse and buy digital/physical items
 - Integrated storefront view
 
 ### 📲 **Slide-In Curved Drawer Menu**
-A custom animated side drawer:
-- Opens with a curved animation  
-- Hamburger button rotates on tap  
-- Contains navigation shortcuts  
+- Curved animated drawer
+- Rotating hamburger menu button
+- Navigation shortcuts
 - Supports extra pages (e.g., Loan Requests)
 
 ### 📝 **Loan Request System**
-- Choose a loan category  
-- Support for custom ("Other") categories  
-- Eligibility evaluation with a **premium gradient bar**  
-- Loan amount input (only when eligible)  
-- Submission screen ready for backend integration
+- Choose a loan category
+- Support for custom ("Other") categories
+- Eligibility evaluation with a **premium gradient bar**
+- Amount field shown only when eligible
+- Ready for backend integration
 
 ### 🎯 **Quick Tour / Onboarding**
-Using `showcaseview`, OBPPay guides new users through:
-- Menu button  
-- Wallet balance  
-- Important actions (Deposit, Transfer)  
-- Only triggered on first launch (configurable)
+Using `showcaseview`, OBPPay guides new users through key features:
+- Menu button
+- Wallet balance
+- Deposit & Transfer actions
+- Can be shown only at first launch (configurable)
 
 ### 🌙 **Dark & Light Mode**
-- Fully supports theme switching  
-- Theme stored via Provider and updated globally
+- Fully responsive themes
+- Managed globally using Provider
 
 ---
 
 ## 📁 Project Structure
 
 ```
-
 lib/
 │
 ├── main.dart                       # App entry point
-├── themes/                         # Light & Dark theme definitions
-├── providers/                      # Theme & User state providers
+├── themes/                         # Light & dark theme definitions
+├── providers/                      # Theme & user state providers
 │
 ├── screens/
 │   ├── splash_screen.dart          # Initial splash screen
@@ -76,43 +68,42 @@ lib/
 │   ├── loan_request_screen.dart    # Loan/aide request module
 │   ├── main_layout.dart            # Home screen with bottom nav & drawer
 │
-├── widgets/                        # Reusable components (if added)
-└── themes/                         # App color scheme, styles
-
-````
+├── widgets/                        # Reusable components (optional)
+└── themes/                         # App color scheme & styles
+```
 
 ---
 
 ## 🛠️ Technologies
 
-| Technology | Purpose |
-|-----------|---------|
-| **Flutter** | Cross-platform mobile app |
-| **Provider** | State management |
-| **ShowCaseView** | Intro guide / Quick Tour |
-| **Dart** | Core language |
-| **Custom Animations** | Drawer, gradient bars |
-| **Material UI** | Base components |
+| Technology         | Purpose                         |
+|-------------------|---------------------------------|
+| **Flutter**       | Cross-platform mobile app       |
+| **Provider**      | State management                |
+| **ShowCaseView**  | Quick tour / onboarding         |
+| **Dart**          | Core language                   |
+| **Custom Animations** | Drawer, gradient bars     |
+| **Material UI**   | Base components                 |
 
 ---
 
 ## 🎨 UI & Design Highlights
 
-- Custom curved right-side hamburger menu  
-- Smooth transition animations  
-- Gradient eligibility bar  
-- Professional spacing, shadows, and color palette  
-- Icons, rounded components, modern layout standards  
+- Custom curved right-side drawer
+- Smooth animations
+- Premium gradient eligibility bar
+- Professional layout, spacing, and shadows
+- Modern rounded UI components
 
 ---
 
 ## 🧠 State Management
 
-OBPPay uses **Provider** to handle:
+OBPPay uses **Provider** to manage:
 
-- Theme switching  
-- User session & profile  
-- Future extension: auth, transactions, loan requests  
+- Theme switching
+- User session
+- Future modules (auth, loan logic, transactions, etc.)
 
 Providers are initialized in `main.dart` using `MultiProvider`.
 
@@ -120,28 +111,30 @@ Providers are initialized in `main.dart` using `MultiProvider`.
 
 ## 💡 Quick Tour (Onboarding)
 
-The quick tour is implemented using `showcaseview`.
+The quick tour highlights key elements of the app.
 
 ### Highlighted elements:
-- Hamburger menu  
-- Wallet balance  
-- Deposit & Transfer buttons  
+- Hamburger menu
+- Wallet balance
+- Deposit button
+- Transfer button
 
 ### How it works:
 1. Keys are defined in `MainLayout`
-2. Widgets are wrapped with `Showcase()`
-3. On first layout render, the tour starts automatically  
-4. (Optional) Can be stored in `SharedPreferences` to show only once  
+2. Widgets are wrapped using `Showcase()`
+3. `startShowCase()` is called after the first render
+4. (Optional) Use `SharedPreferences` to show it only once
 
 ---
 
 ## 📦 Installation & Setup
 
 ### 1. Clone the repo
+
 ```bash
 git clone https://github.com/<username>/obppay.git
 cd obppay
-````
+```
 
 ### 2. Install dependencies
 
@@ -155,7 +148,7 @@ flutter pub get
 flutter run
 ```
 
-### 4. (Optionnel) Build APK
+### 4. (Optional) Build APK
 
 ```bash
 flutter build apk
@@ -165,16 +158,17 @@ flutter build apk
 
 ## 🔌 Backend Integration
 
-OBPPay is designed to integrate with any backend (Laravel, Node.js, Django…).
-Typical endpoints:
+OBPPay integrates easily with any backend: Laravel, Node.js, Django, etc.
 
-* `/auth/login`
-* `/wallet/balance`
-* `/wallet/transactions`
-* `/transfer/send`
-* `/loan/request`
+Common endpoints include:
 
-The structure is ready for API integration via:
+- `/auth/login`
+- `/wallet/balance`
+- `/wallet/transactions`
+- `/transfer/send`
+- `/loan/request`
+
+Networking can be implemented with:
 
 ```dart
 http
@@ -182,46 +176,44 @@ dio
 retrofit
 ```
 
-depending on your preference.
-
 ---
 
 ## 🔐 Security Considerations
 
-* Sensitive actions can use OTP verification
-* UserProvider stores authentication tokens
-* API requests (future) should use HTTPS
-* Secure local storage recommended for tokens
+- OTP for sensitive operations
+- Token storage using Provider + secure storage (recommended)
+- HTTPS for all API requests
+- Proper validation on backend
 
 ---
 
 ## 🎯 Roadmap
 
-### Planned features:
+Planned features:
 
-* 🔐 OTP login flow
-* 📍 Nearest OBP agencies
-* 🧾 Transaction receipts (PDF)
-* 📊 Loan eligibility calculator with scoring
-* 🔔 Push notifications
-* 🌐 Full backend integration
-* 💳 Virtual card generation
+- 🔐 OTP login
+- 📍 Nearby OBP agencies
+- 🧾 Transaction receipts (PDF)
+- 📊 Loan eligibility scoring system
+- 🔔 Push notifications
+- 🌐 Full backend integration
+- 💳 Virtual card module
 
 ---
 
 ## 👨‍💻 Author
 
-**Gobi-a P. Ahonon**
-Software Engineering • Machine Learning • AI Researcher
-🇨🇭 Based in Switzerland • 🇧🇯 From Benin
-📘 Passionate about fintech, systems intelligence & UX quality
+**Gobi-a P. Ahonon**  
+Software Engineering • Machine Learning • AI Researcher  
+🇨🇭 Based in Switzerland • 🇧🇯 From Benin  
+📘 Passionate about fintech, intelligent systems & UX design
 
 ---
 
 ## ⭐ Contribution
 
-Open to contributions!
-Please follow the PR template and coding style.
+Contributions are welcome!  
+Please follow the code style and PR structure.
 
 ---
 
@@ -230,14 +222,6 @@ Please follow the PR template and coding style.
 MIT License © 2025 OBPPay
 
 ---
-
-```
-
----
-
-
-
-```
 
 ## 📱 Screenshots
 
