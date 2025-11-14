@@ -205,7 +205,7 @@ Planned features:
 
 **Gobi-a P. Ahonon**  
 Software Engineering • Machine Learning • AI Researcher  
-🇨🇭 Based in Switzerland • 🇧🇯 From Benin  
+🇨🇭 Based in Switzerland (and based 🇺🇸 US) • 🇧🇯 From Benin  
 📘 Passionate about fintech, intelligent systems & UX design
 
 ---
