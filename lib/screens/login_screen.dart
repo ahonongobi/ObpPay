@@ -1,9 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:obppay/providers/user_provider.dart';
 import 'package:obppay/screens/ForgetPasswordScreen.dart';
 import 'package:obppay/screens/main_layout.dart';
 import 'package:obppay/screens/regsiter_screen.dart';
 import 'package:obppay/themes/app_colors.dart';
-import 'dashboard_screen.dart';
+import 'package:local_auth/local_auth.dart';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:obppay/services/api.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:provider/provider.dart';
+
+final storage = FlutterSecureStorage();
+
+
+
 
 const fakePhone = "1234567890";
 const fakePassword = "1234pass";
@@ -22,6 +34,9 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _hidePassword = true;
   bool _loading = false;
 
+  final LocalAuthentication auth = LocalAuthentication();
+
+
   void _login() async {
     final phone = _phoneController.text.trim();
     final pass = _passwordController.text.trim();
@@ -33,20 +48,61 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _loading = true);
 
-    await Future.delayed(const Duration(seconds: 1)); // simulation API
-
-    if (phone == fakePhone && pass == fakePassword) {
-      // SUCCESS
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainLayout(initialIndex: 0)),
+    try {
+      final response = await http.post(
+        Uri.parse("${Api.baseUrl}/auth/login"),
+        headers: {"Accept": "application/json"},
+        body: {
+          "phone": phone,
+          "password": pass,
+        },
       );
-    } else {
-      _showMessage("Numéro ou mot de passe incorrect.");
+
+      print("LOGIN RESPONSE → ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        // TODO: store token in secure storage + user info
+        final token = data["token"];
+        print("🟢 TOKEN FROM LOGIN → $token");
+        await storage.write(key: "token", value: token);
+
+
+        // Vérifions ce que voit vraiment /auth/me AVANT d'aller plus loin
+        final meResp = await http.get(
+          Uri.parse("${Api.baseUrl}/auth/me"),
+          headers: {
+            "Accept": "application/json",
+            "Authorization": "Bearer $token",
+          },
+        );
+
+        print("🟣 /auth/me STATUS → ${meResp.statusCode}");
+        print("🟣 /auth/me BODY   → ${meResp.body}");
+
+// charge user depuis l'API
+        await context.read<UserProvider>().loadUserFromApi();
+
+// goto dashboard
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainLayout(initialIndex: 0)),
+        );
+      } else {
+        // error JSON
+        final body = json.decode(response.body);
+
+        _showMessage(body["message"] ?? "Identifiants incorrects.");
+      }
+    } catch (e) {
+      _showMessage("Erreur réseau.");
+      print("LOGIN ERROR → $e");
     }
 
     setState(() => _loading = false);
   }
+
 
   void _showMessage(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -57,6 +113,44 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+
+  Future<void> _loginWithBiometrics() async {
+    try {
+      bool canCheck = await auth.canCheckBiometrics;
+      bool supported = await auth.isDeviceSupported();
+
+      if (!canCheck || !supported) {
+        _showMessage("Votre appareil ne supporte pas la biométrie.");
+        return;
+      }
+
+      bool success = await auth.authenticate(
+        localizedReason: Platform.isIOS
+            ? "Authentifiez-vous avec Face ID / Touch ID"
+            : "Authentifiez-vous avec votre empreinte digitale",
+        options: const AuthenticationOptions(
+          biometricOnly: false,
+          stickyAuth: true,
+        ),
+      );
+
+      if (success) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainLayout(initialIndex: 0)),
+        );
+      }
+    } catch (e) {
+      _showMessage("Échec de l'authentification biométrique.");
+      print(await auth.getAvailableBiometrics());
+      print(await auth.isDeviceSupported());
+      //print(await auth.canCheckBiometrics());
+      print(await auth.getAvailableBiometrics());
+
+
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       size: 40, color: AppColors.primaryIndigo),
                   SizedBox(width: 8),
                   Text(
-                    "ObPay",
+                    "ObpPay",
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w700,
@@ -228,6 +322,52 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
+
+
+              // FINGERPRINT AREA
+              const SizedBox(height: 30),
+
+              Center(
+                child: Column(
+                  children: [
+                    Text(
+                      "Ou connectez-vous avec",
+                      style: TextStyle(
+                        color: Colors.black54,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Bouton Biometric Premium
+                    InkWell(
+                      onTap: _loginWithBiometrics,
+                      borderRadius: BorderRadius.circular(50),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.grey.shade200,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.fingerprint,
+                          size: 42,
+                          color: AppColors.primaryIndigo,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
             ],
           ),
         ),

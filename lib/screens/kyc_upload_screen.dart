@@ -28,7 +28,7 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
             children: [
               // --- Étape ---
               const Text(
-                "Étape 2 sur 3",
+                "Étape 1 sur 1",
                 style: TextStyle(
                   color: AppColors.primaryIndigo,
                   fontWeight: FontWeight.w600,
@@ -38,7 +38,7 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: LinearProgressIndicator(
-                  value: 0.66,
+                  value: 1,
                   backgroundColor: Colors.grey.shade300,
                   valueColor: const AlwaysStoppedAnimation<Color>(
                     AppColors.primaryIndigo,
@@ -131,7 +131,7 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                     ),
                   ),
                   child: const Text(
-                    "Continuer",
+                    "Soumettre",
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,

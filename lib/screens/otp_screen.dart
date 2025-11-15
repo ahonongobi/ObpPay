@@ -1,11 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:obppay/screens/RegisterSuccess_Screen.dart';
 import 'dart:async';
 import 'package:obppay/themes/app_colors.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:obppay/services/api.dart';
+
 
 class OtpScreen extends StatefulWidget {
   final String purpose; // "register" or "reset"
+  final String? name;
+  final String? phone;
+  final String? password;
+  final String? idGenerated;
 
-  const OtpScreen({super.key, required this.purpose});
+  const OtpScreen({super.key, required this.purpose,this.name,
+    this.phone,
+    this.password,this.idGenerated});
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -22,7 +33,9 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   void initState() {
     super.initState();
+   // _sendOtp();
     startTimer();
+
   }
 
   void startTimer() {
@@ -48,6 +61,10 @@ class _OtpScreenState extends State<OtpScreen> {
         currentIndex++;
       });
     }
+
+    if(currentIndex == 4){
+      verifyOtp();
+    }
   }
 
   void onDelete() {
@@ -61,11 +78,50 @@ class _OtpScreenState extends State<OtpScreen> {
 
   bool get isComplete => code.join().length == 4;
 
+  //final baseUrl = "http://10.0.2.2:8000/api";
+
+
+  Future<void> registerUser() async {
+    try {
+      final response = await http.post(
+        Uri.parse("${Api.baseUrl}/auth/register"),
+        body: {
+          "phone": widget.phone,
+          "otp": code.join(),
+          "obp_id": widget.idGenerated,
+        },
+      );
+
+      print("REGISTER RESPONSE = ${response.body}");
+
+      if (response.statusCode == 200) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RegisterSuccessScreen(obpId: widget.idGenerated!),
+          ),
+        );
+      } else {
+        final body = json.decode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(body["message"] ?? "Erreur")),
+        );
+      }
+    } catch (e) {
+      print("Erreur REGISTER → $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Erreur réseau")),
+      );
+    }
+  }
+
   // ------------------------------------------------------
   // HANDLE OTP SUCCESS BASED ON PURPOSE
   // ------------------------------------------------------
-  void handleOtpSuccess() {
+  void handleOtpSuccess() async {
     if (widget.purpose == "register") {
+        await registerUser();
+
       //Navigator.pushReplacement(
        // context,
        // MaterialPageRoute(builder: (_) => const RegisterSuccessScreen()),
@@ -79,6 +135,27 @@ class _OtpScreenState extends State<OtpScreen> {
       //);
     }
   }
+
+  Future<void> _sendOtp() async {
+    try {
+      final response = await http.post(
+        Uri.parse("${Api.baseUrl}/auth/send-otp"),
+        body: {
+          "phone": widget.phone,
+        },
+      );
+
+      print("OTP envoyé → ${response.body}");
+    } catch (e) {
+      print("Erreur OTP → $e");
+    }
+  }
+
+  Future<void> verifyOtp() async {
+    await registerUser();
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -101,7 +178,7 @@ class _OtpScreenState extends State<OtpScreen> {
                     const SizedBox(height: 10),
 
                     const Text(
-                      "Étape 3 sur 3",
+                      "Étape 2 sur 2",
                       style: TextStyle(
                         color: AppColors.primaryIndigo,
                         fontWeight: FontWeight.w600,
@@ -182,7 +259,8 @@ class _OtpScreenState extends State<OtpScreen> {
                         style: const TextStyle(color: Colors.black54),
                       )
                           : GestureDetector(
-                        onTap: () {
+                        onTap: () async {
+                          await _sendOtp();
                           setState(() => timerSeconds = 60);
                           startTimer();
                         },
@@ -203,7 +281,7 @@ class _OtpScreenState extends State<OtpScreen> {
                       width: double.infinity,
                       height: 52,
                       child: ElevatedButton(
-                        onPressed: isComplete ? () {} : null,
+                        onPressed: isComplete ? verifyOtp : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryIndigo,
                           disabledBackgroundColor: Colors.grey.shade400,

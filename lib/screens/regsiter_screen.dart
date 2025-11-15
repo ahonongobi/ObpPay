@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:obppay/screens/kyc_upload_screen.dart';
+import 'package:obppay/screens/otp_screen.dart';
+import 'package:obppay/services/api.dart';
 import 'package:obppay/themes/app_colors.dart';
 import 'dart:math';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+
+
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -15,7 +22,121 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _hidePass1 = true;
   bool _hidePass2 = true;
 
+  bool passwordsMatch = true;
+
+
   late String obpayNumber;
+  bool isFormValid = false;
+
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _pass1Controller = TextEditingController();
+  final TextEditingController _pass2Controller = TextEditingController();
+
+
+
+  void _validateForm() {
+    final name = _nameController.text.trim();
+    final phone = _phoneController.text.trim();
+    final pass1 = _pass1Controller.text.trim();
+    final pass2 = _pass2Controller.text.trim();
+
+
+    setState(() {
+      passwordsMatch = pass1 == pass2;
+
+      isFormValid =
+          name.isNotEmpty &&
+              phone.isNotEmpty &&
+              pass1.isNotEmpty &&
+              pass2.isNotEmpty &&
+              passwordsMatch;
+    });
+  }
+
+  void showTopSnackBar(BuildContext context, String message, {Color color = Colors.red}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.only(
+          top: 20,
+          left: 16,
+          right: 16,
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+
+  Future<void> startRegistration() async {
+    try {
+      final response = await http.post(
+        Uri.parse("${Api.baseUrl}/auth/register"),
+        headers: {"Accept": "application/json"},
+        body: {
+          "name": _nameController.text.trim(),
+          "phone": _phoneController.text.trim(),
+          "password": _pass1Controller.text.trim(),
+        },
+      );
+
+      print(response.body);
+
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Aller à l'écran OTP
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OtpScreen(
+              purpose: "register",
+              name: _nameController.text.trim(),
+              phone: _phoneController.text.trim(),
+              password: _pass1Controller.text.trim(),
+              idGenerated: obpayNumber,
+            ),
+          ),
+        );
+      } else {
+        // ---- ERREUR BACKEND ----
+        final data = json.decode(response.body);
+
+        String errorMsg = "Erreur";
+
+        if (data["errors"] != null) {
+          // Prend la première erreur disponible
+          errorMsg = data["errors"].values.first[0];
+        } else if (data["message"] != null) {
+          errorMsg = data["message"];
+        }
+
+        showTopSnackBar(context, errorMsg);
+
+      }
+    } catch (e, stack) {
+      print("🔴 ERREUR startRegistration → $e");
+      print(stack);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Erreur réseau: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+
 
   @override
   void initState() {
@@ -56,7 +177,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               // --- Step indicator ---
               const Text(
-                "Étape 1 sur 3",
+                "Étape 1 sur 2",
                 style: TextStyle(
                   color: AppColors.primaryIndigo,
                   fontWeight: FontWeight.w600,
@@ -86,6 +207,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 8),
 
               TextField(
+                controller: _nameController,
+                onChanged: (_) => _validateForm(),
                 decoration: InputDecoration(
                   hintText: "Votre nom et prénoms",
                 ),
@@ -98,6 +221,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 8),
 
               TextField(
+                controller: _phoneController,
+                onChanged: (_) => _validateForm(),
                 keyboardType: TextInputType.phone,
                 decoration: const InputDecoration(
                   hintText: "Ex: 0789123456",
@@ -112,6 +237,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 8),
 
               TextField(
+                controller: _pass1Controller,
+                onChanged: (_) => _validateForm(),
+
                 obscureText: _hidePass1,
                 decoration: InputDecoration(
                   hintText: "********",
@@ -134,6 +262,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 8),
 
               TextField(
+                controller: _pass2Controller,
+                onChanged: (_) => _validateForm(),
                 obscureText: _hidePass2,
                 decoration: InputDecoration(
                   hintText: "********",
@@ -148,6 +278,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
               ),
+              if (!passwordsMatch && _pass2Controller.text.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6.0, left: 4),
+                  child: Text(
+                    "Les mots de passe ne correspondent pas",
+                    style: TextStyle(color: Colors.red.shade600, fontSize: 12),
+                  ),
+                ),
+
 
               const SizedBox(height: 35),
 
@@ -227,21 +366,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // TODO: Go to KYC screen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const KycUploadScreen(),
-                      ),
-                    );
-                  },
+                  onPressed: isFormValid
+                      ? () async {
+                    await startRegistration();
+                  }
+                      : null, // désactive le bouton si false
+
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryIndigo,
+                    backgroundColor:
+                    isFormValid ? AppColors.primaryIndigo : Colors.grey.shade400,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
+
                   child: const Text(
                     "Continuer",
                     style: TextStyle(
@@ -252,6 +390,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
               ),
+
 
               const SizedBox(height: 40),
             ],

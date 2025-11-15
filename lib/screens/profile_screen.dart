@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:obppay/screens/login_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
 import '../themes/app_colors.dart';
@@ -101,7 +102,16 @@ class ProfileScreen extends StatelessWidget {
                     leading: const Icon(Icons.logout, color: Colors.red),
                     title: const Text("Se déconnecter",
                         style: TextStyle(color: Colors.red)),
-                    onTap: () {},
+                    onTap: () async {
+                      await context.read<UserProvider>().logout();
+
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                            (route) => false,
+                      );
+                    },
+
                   ),
                 ],
               ),

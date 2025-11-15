@@ -1,4 +1,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 🌐 INTERNET & NETWORK -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+
+    <!-- 🔐 BIOMETRICS / FINGERPRINT -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+    <uses-permission android:name="android.permission.USE_FINGERPRINT"/>
+
+    <!-- 📳 VIBRATION (haptics, OTP feedback) -->
+    <uses-permission android:name="android.permission.VIBRATE"/>
     <application
         android:label="obppay"
         android:name="${applicationName}"

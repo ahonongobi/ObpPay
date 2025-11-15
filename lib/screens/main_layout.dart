@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:obppay/providers/user_provider.dart';
 import 'package:obppay/screens/dashboard_screen.dart';
+import 'package:obppay/screens/kyc_upload_screen.dart';
 import 'package:obppay/screens/loan_request_screen.dart';
 import 'package:obppay/screens/marketplace_screen.dart';
 import 'package:obppay/screens/deposit_screen.dart';
 import 'package:obppay/screens/profile_screen.dart';
 import 'package:obppay/screens/transfer_screen.dart';
 import 'package:obppay/themes/app_colors.dart';
+import 'package:provider/provider.dart';
 import 'package:showcaseview/showcaseview.dart';
 
 class MainLayout extends StatefulWidget {
@@ -41,6 +44,12 @@ class _MainLayoutState extends State<MainLayout>
   @override
   void initState() {
     super.initState();
+
+
+// Charger user desde le backend dès qu’on arrive sur le dashboard
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<UserProvider>().loadUserFromApi();
+    });
 
     currentIndex = widget.initialIndex;
 
@@ -84,6 +93,7 @@ class _MainLayoutState extends State<MainLayout>
     TransferScreen(),
     ProfileScreen(),
     LoanRequestScreen(),
+    KycUploadScreen(),
   ];
 
   @override
@@ -168,6 +178,16 @@ class _MainLayoutState extends State<MainLayout>
                                   menuItem(Icons.person_outline, "Profil", () {
                                     setState(() => currentIndex = 4);
                                   }),
+
+                                  menuItem(Icons.verified_user, "Verifier ID", () {
+
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const KycUploadScreen()),
+                                    );
+
+                                  }),
+
 
                                 ],
                               ),

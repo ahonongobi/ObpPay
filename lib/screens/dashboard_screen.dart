@@ -1,15 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:obppay/providers/user_provider.dart';
 import 'package:obppay/screens/QRScan_screen.dart';
 import 'package:obppay/screens/deposit_screen.dart';
 import 'package:obppay/screens/main_layout.dart';
 import 'package:obppay/screens/marketplace_screen.dart';
 import 'package:obppay/themes/app_colors.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final user = context.watch<UserProvider>().user;
+
+    // ✅ Format here
+    final formattedBalance = NumberFormat("#,###", "fr_FR")
+        .format(user.balance);
+
+    final obp_id = user.obpayId;
+
     return Scaffold(
       backgroundColor: Colors.white,
 
@@ -102,17 +115,53 @@ class DashboardScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
 
-                      const Text(
-                        "12 250 000 XOF",
+                      Text(
+                        //"12 250 000 XOF",
+                        "$formattedBalance XOF",
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 26,
+                          fontSize: 19,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
 
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
 
+
+                    // ===== USER ID WITH COPY =====
+                      Row(
+                        children: [
+                          Text(
+                            "ID-ObpPay: $obp_id",
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+
+                          GestureDetector(
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("ID copié !"),
+                                  backgroundColor: Colors.green,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                              Clipboard.setData( ClipboardData(text: "$obp_id"));
+                            },
+                            child: const Icon(
+                              Icons.copy,
+                              size: 16,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
                       // ------ QUICK ACTIONS ------
                       GridView(
                         shrinkWrap: true,

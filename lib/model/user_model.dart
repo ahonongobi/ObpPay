@@ -1,15 +1,60 @@
 class UserModel {
-  String fullName;
-  String obpayId;
-  String phone;
-  int points;
+  final String fullName;
+  final String phone;
+  final String obpayId;
+  final int points;
+  final bool isEligible;
+  final double balance;
 
   UserModel({
     required this.fullName,
-    required this.obpayId,
     required this.phone,
+    required this.obpayId,
     required this.points,
+    required this.isEligible,
+    required this.balance,
   });
 
-  bool get isEligible => points >= 50; // Condition d'éligibilité
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    final wallet = json["wallet"];
+
+    final double balance = wallet != null
+        ? double.tryParse(wallet["balance"].toString()) ?? 0.0
+        : 0.0;
+    return UserModel(
+      fullName: json["name"] ?? "",
+      phone: json["phone"] ?? "",
+      obpayId: json["obp_id"] ?? "",
+      points: balance.toInt(),
+      isEligible:  balance >= 50,
+      balance: balance,
+    );
+  }
+
+  factory UserModel.empty() => UserModel(
+    fullName: "",
+    phone: "",
+    obpayId: "",
+    points: 0,
+    isEligible: false,
+    balance: 0,
+  );
+
+  UserModel copyWith({
+    String? fullName,
+    String? phone,
+    String? obpayId,
+    int? points,
+    bool? isEligible,
+    double? balance,
+  }) {
+    return UserModel(
+      fullName: fullName ?? this.fullName,
+      phone: phone ?? this.phone,
+      obpayId: obpayId ?? this.obpayId,
+      points: points ?? this.points,
+      isEligible: isEligible ?? this.isEligible,
+      balance: balance ?? this.balance,
+    );
+  }
 }
