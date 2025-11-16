@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:obppay/providers/user_provider.dart';
@@ -5,13 +9,126 @@ import 'package:obppay/screens/QRScan_screen.dart';
 import 'package:obppay/screens/deposit_screen.dart';
 import 'package:obppay/screens/main_layout.dart';
 import 'package:obppay/screens/marketplace_screen.dart';
+import 'package:obppay/services/api.dart';
 import 'package:obppay/themes/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
 
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+
+  bool highlightBalance = false;
+
+// Confetti controller
+  late ConfettiController _confettiController;
+
+
+  // Floating text state
+  bool showFloatingPoints = false;
+  String floatingText = "+5";
+  @override
+  void initState() {
+    super.initState();
+
+
+    // Fetch balance when dashboard opens
+    fetchWalletBalance();
+
+
+
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 2),
+    );
+    context.read<UserProvider>().fetchScore();
+
+    triggerCelebration(3);
+    // Listen to score updates
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<UserProvider>().addListener(() {
+        //triggerCelebration(5);
+        final provider = context.read<UserProvider>();
+
+        if (provider.lastPoints > 0) {
+          triggerCelebration(provider.lastPoints);
+        }
+      });
+    });
+
+    // Listen AFTER frame is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<UserProvider>().addListener(() {
+        setState(() {
+          highlightBalance = true;
+        });
+
+        Future.delayed(const Duration(milliseconds: 450), () {
+          if (mounted) {
+            setState(() {
+              highlightBalance = false;
+            });
+          }
+        });
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
+  }
+
+  void triggerCelebration(int points) {
+    // 🎉 trigger falling confetti
+    _confettiController.play();
+
+    // Show floating +5 text
+    setState(() {
+      floatingText = "+$points";
+      showFloatingPoints = true;
+    });
+
+    // Hide after animation
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted) {
+        setState(() => showFloatingPoints = false);
+      }
+    });
+
+    // Green flash for balance (already implemented)
+    setState(() => highlightBalance = true);
+    Future.delayed(const Duration(milliseconds: 450), () {
+      if (mounted) setState(() => highlightBalance = false);
+    });
+  }
+
+
+
+  Future<void> fetchWalletBalance() async {
+    final token = context.read<UserProvider>().token;
+
+    final response = await http.get(
+      Uri.parse("${Api.baseUrl}/wallet/balance"),
+      headers: {
+        "Accept": "application/json",
+        "Authorization": "Bearer $token",
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      context.read<UserProvider>().updateBalance(double.parse(data["balance"]));
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +139,7 @@ class DashboardScreen extends StatelessWidget {
         .format(user.balance);
 
     final obp_id = user.obpayId;
+    final currency = user.currency;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -115,15 +233,33 @@ class DashboardScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
 
-                      Text(
+                      //Text(
                         //"12 250 000 XOF",
-                        "$formattedBalance XOF",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 19,
-                          fontWeight: FontWeight.w800,
+                        //"$formattedBalance $currency",
+                  //style: TextStyle(
+                  // color: Colors.white,
+                  //fontSize: 19,
+                  // fontWeight: FontWeight.w800,
+                  // ),
+                      //),
+
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 350),
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: highlightBalance ? Colors.green.withOpacity(0.25) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          "$formattedBalance  $currency",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 19,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
+
 
                       const SizedBox(height: 10),
 
@@ -281,6 +417,83 @@ class DashboardScreen extends StatelessWidget {
               ],
             ),
           ),
+
+          // 🎉 Confetti
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirection: pi / 2,
+              emissionFrequency: 0.04,
+              numberOfParticles: 25,
+              maxBlastForce: 30,      // plus fort
+              minBlastForce: 10,
+              gravity: 0.2,           // tombe plus doucement
+              particleDrag: 0.02,
+              // ❤️ Ajout : rendre les confettis plus grands
+              colors: [
+                Colors.green.withOpacity(0.9),
+                Colors.blue.withOpacity(0.9),
+                Colors.orange.withOpacity(0.9),
+                Colors.purple.withOpacity(0.9),
+              ],
+              // Ajouter des formes personnalisées (bigger)
+              createParticlePath: (size) {
+                final rnd = Random().nextInt(3);
+                switch (rnd) {
+                  case 0:
+                    return Path()
+                      ..addOval(Rect.fromCircle(center: Offset.zero, radius: 6)); // 🔥 confetti rond ++
+                  case 1:
+                    return Path()
+                      ..addRect(Rect.fromLTWH(-4, -4, 12, 12)); // 🔥 carré
+                  default:
+                    return Path()
+                      ..addPolygon([
+                        Offset(0, -10),
+                        Offset(8, 10),
+                        Offset(-8, 10),
+                      ], true); // 🔥 triangle agrandi
+                }
+              },
+            ),
+
+          ),
+
+          // 🔼 Floating +5 text animation
+          if (showFloatingPoints)
+            Positioned(
+              top: 120,
+              left: MediaQuery.of(context).size.width / 2 - 40,
+              child: AnimatedOpacity(
+                opacity: showFloatingPoints ? 1 : 0,
+                duration: const Duration(milliseconds: 600),
+                child: AnimatedSlide(
+                  offset: showFloatingPoints
+                      ? const Offset(0, -1.5)
+                      : const Offset(0, 0),
+                  duration: const Duration(milliseconds: 600),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade700,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      floatingText,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
 

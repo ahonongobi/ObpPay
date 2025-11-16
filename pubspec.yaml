@@ -39,6 +39,9 @@ dependencies:
   local_auth: ^2.1.0
   http: ^0.13.6
   flutter_secure_storage: ^9.0.0
+  vibration: ^1.8.1
+  flutter_local_notifications: ^17.0.0
+  confetti: ^0.7.0
 
 
 

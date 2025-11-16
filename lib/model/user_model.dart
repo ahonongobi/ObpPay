@@ -5,6 +5,7 @@ class UserModel {
   final int points;
   final bool isEligible;
   final double balance;
+  final String currency;
 
   UserModel({
     required this.fullName,
@@ -13,6 +14,7 @@ class UserModel {
     required this.points,
     required this.isEligible,
     required this.balance,
+    required this.currency,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -27,7 +29,7 @@ class UserModel {
       obpayId: json["obp_id"] ?? "",
       points: balance.toInt(),
       isEligible:  balance >= 50,
-      balance: balance,
+      balance: balance, currency: wallet["currency"]
     );
   }
 
@@ -38,6 +40,7 @@ class UserModel {
     points: 0,
     isEligible: false,
     balance: 0,
+    currency: ""
   );
 
   UserModel copyWith({
@@ -47,6 +50,7 @@ class UserModel {
     int? points,
     bool? isEligible,
     double? balance,
+    String? currency,
   }) {
     return UserModel(
       fullName: fullName ?? this.fullName,
@@ -55,6 +59,7 @@ class UserModel {
       points: points ?? this.points,
       isEligible: isEligible ?? this.isEligible,
       balance: balance ?? this.balance,
+      currency: currency ?? this.currency,
     );
   }
 }

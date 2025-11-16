@@ -8,19 +8,50 @@ import '../services/api.dart';
 class UserProvider extends ChangeNotifier {
   UserModel user = UserModel.empty();
   final storage = const FlutterSecureStorage();
+  String? token;
 
+  double score = 0;
+  int lastPoints = 0;
 
 
 
   bool isLoading = false;
+
+
+  Future<void> fetchScore() async {
+    if (token == null) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse("${Api.baseUrl}/user/score/latest"),
+        headers: {
+          "Accept": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        lastPoints = data["last_points"] ?? 0;
+        score = double.tryParse(data["score"].toString()) ?? 0;
+
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
 
   Future<void> loadUserFromApi() async {
     isLoading = true;
     notifyListeners();
 
     try {
-      final token = await storage.read(key: "token");
-      print("🔹 TOKEN IN PROVIDER → $token");
+      final storedToken = await storage.read(key: "token");
+      print("🔹 TOKEN IN PROVIDER → $storedToken");
+
+      token = storedToken;
+
       if (token == null) {
         isLoading = false;
         notifyListeners();
@@ -64,6 +95,15 @@ class UserProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateBalance(double newBalance) {
+    user = user.copyWith(
+      balance: newBalance,   // requires your UserModel to support this field
+    );
+
+    notifyListeners();
+  }
+
+
   Future<void> logout() async {
     try {
       final token = await storage.read(key: "token");
@@ -82,4 +122,7 @@ class UserProvider extends ChangeNotifier {
 
     notifyListeners();
   }
+
+
+
 }

@@ -1,12 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:obppay/providers/user_provider.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:obppay/screens/splash_screen.dart';
 import 'package:obppay/themes/light_theme.dart';
 import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
 import 'themes/dark_theme.dart';
 
-void main() {
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+FlutterLocalNotificationsPlugin();
+
+void main() async {
+
+  WidgetsFlutterBinding.ensureInitialized();
+
+  const AndroidInitializationSettings androidSettings =
+  AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  const InitializationSettings initSettings =
+  InitializationSettings(android: androidSettings);
+
+  await flutterLocalNotificationsPlugin.initialize(initSettings);
   runApp(
     MultiProvider(
       providers: [

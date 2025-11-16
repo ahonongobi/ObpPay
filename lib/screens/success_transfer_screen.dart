@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:obppay/providers/user_provider.dart';
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:vibration/vibration.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../main.dart';
 import '../themes/app_colors.dart';
 import 'receipt_pdf.dart';
 
-class SuccessTransferScreen extends StatelessWidget {
+class SuccessTransferScreen extends StatefulWidget {
   final String receiver;
   final String receiverId;
   final String amount;
   final String note;
+  final String newBalance;
 
-  // Ces deux seront générés automatiquement
   final String transactionId;
   final String date;
 
@@ -21,6 +26,7 @@ class SuccessTransferScreen extends StatelessWidget {
     required this.receiverId,
     required this.amount,
     required this.note,
+    required this.newBalance,
     String? transactionId,
     String? date,
   })  : transactionId = transactionId ??
@@ -29,7 +35,56 @@ class SuccessTransferScreen extends StatelessWidget {
             DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
 
   @override
+  State<SuccessTransferScreen> createState() => _SuccessTransferScreenState();
+}
+
+class _SuccessTransferScreenState extends State<SuccessTransferScreen> {
+
+
+  @override
+  void initState() {
+    super.initState();
+    triggerSuccessFeedback();
+  }
+
+  // VIBRATION + NOTIFICATION
+  void triggerSuccessFeedback() async {
+    // Vibrate
+    if (await Vibration.hasVibrator() ?? false) {
+      Vibration.vibrate(duration: 200);
+    }
+
+    // Notification
+    showSuccessNotification(widget.amount, widget.receiver);
+  }
+
+  void showSuccessNotification(String amount, String receiver) {
+    const AndroidNotificationDetails androidDetails =
+    AndroidNotificationDetails(
+      'transfer_channel',
+      'Transfers',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+    );
+
+    const NotificationDetails notifDetails =
+    NotificationDetails(android: androidDetails);
+
+    flutterLocalNotificationsPlugin.show(
+      1,
+      "Transfert réussi",
+      "Vous avez envoyé $amount XOF à $receiver",
+      notifDetails,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+
+    final user = context.watch<UserProvider>().user;
+
+    final username = user.fullName;
     return Scaffold(
       backgroundColor: Colors.white,
 
@@ -73,12 +128,13 @@ class SuccessTransferScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            _infoBox("Montant", "$amount XOF"),
-            _infoBox("Destinataire", receiver),
-            _infoBox("ID ObPay", receiverId),
-            _infoBox("Motif", note.isEmpty ? "-" : note),
-            _infoBox("Date", date),
-            _infoBox("ID Transaction", transactionId),
+            _infoBox("Montant", "${widget.amount} XOF"),
+            _infoBox("Destinataire", widget.receiver),
+            _infoBox("ID ObPay", widget.receiverId),
+            _infoBox("Motif", widget.note.isEmpty ? "-" : widget.note),
+            _infoBox("Date", widget.date),
+            _infoBox("ID Transaction", widget.transactionId),
+            _infoBox("Nouveau solde", "${widget.newBalance} XOF"),
 
             const SizedBox(height: 20),
 
@@ -88,13 +144,13 @@ class SuccessTransferScreen extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: () async {
                   final pdfBytes = await ReceiptPDF.generate(
-                    sender: "Gobi A.",
-                    receiver: receiver,
-                    receiverId: receiverId,
-                    amount: amount,
-                    date: date,
-                    transactionId: transactionId,
-                    note: note,
+                    sender: "$username",
+                    receiver: widget.receiver,
+                    receiverId: widget.receiverId,
+                    amount: widget.amount,
+                    date: widget.date,
+                    transactionId: widget.transactionId,
+                    note: widget.note,
                   );
 
                   await Printing.layoutPdf(
