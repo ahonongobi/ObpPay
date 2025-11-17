@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:obppay/model/user_model.dart';
+import 'package:provider/provider.dart';
 import 'dart:convert';
 import '../services/api.dart';
 
@@ -17,6 +21,8 @@ class UserProvider extends ChangeNotifier {
 
   bool isLoading = false;
 
+  int loanEligibility = 0; // 0 = not eligible, 1 = eligible
+  String loanMessage = "";
 
   Future<void> fetchScore() async {
     if (token == null) return;
@@ -69,6 +75,8 @@ class UserProvider extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         user = UserModel.fromJson(data);
+
+        await checkLoanEligibility();
       }
     } catch (e) {
       print("LOAD USER ERROR → $e");
@@ -94,6 +102,20 @@ class UserProvider extends ChangeNotifier {
 
     notifyListeners();
   }
+
+  void updateUserProfile({
+    required String fullName,
+    required String phone,
+    String? email,
+  }) {
+    user = user.copyWith(
+      fullName: fullName,
+      phone: phone,
+      email: email,
+    );
+    notifyListeners();
+  }
+
 
   void updateBalance(double newBalance) {
     user = user.copyWith(
@@ -122,6 +144,82 @@ class UserProvider extends ChangeNotifier {
 
     notifyListeners();
   }
+
+
+  Future<void> checkLoanEligibility() async {
+    if (token == null) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse("${Api.baseUrl}/loan/eligibility"),
+        headers: {
+          "Accept": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        loanEligibility = data["eligibility"]; // 0 or 1
+        loanMessage = data["message"];
+
+        notifyListeners();
+      }
+    } catch (e) {
+      print("Eligibility error → $e");
+    }
+  }
+
+  Future<void> pickAndUploadProfileImage(BuildContext context) async {
+    try {
+      final picker = ImagePicker();
+      final XFile? file = await picker.pickImage(source: ImageSource.gallery);
+
+      if (file == null) return;
+
+      final provider = context.read<UserProvider>();
+      final user = provider.user;
+
+      File imageFile = File(file.path);
+
+      // ---- 1) Upload au backend ----
+      final newUrl = await uploadProfileImage(imageFile, provider.token!);
+
+      // ---- 2) Mettre à jour l'objet user ----
+      user.avatarUrl = newUrl;
+      provider.notifyListeners();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Photo mise à jour avec succès !")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Erreur : $e")),
+      );
+    }
+  }
+
+  Future<String> uploadProfileImage(File file, String token) async {
+    final url = "${Api.baseUrl}/user/update-photo";
+
+    final request = http.MultipartRequest("POST", Uri.parse(url));
+    request.headers["Authorization"] = "Bearer $token";
+
+    request.files.add(await http.MultipartFile.fromPath("photo", file.path));
+
+    final response = await request.send();
+    final body = await response.stream.bytesToString();
+
+    if (response.statusCode == 200) {
+      final json = jsonDecode(body);
+      return json["avatar_url"]; // 🔥 Doit matcher ton backend
+    } else {
+      throw "Upload failed (${response.statusCode})";
+    }
+  }
+
+
 
 
 

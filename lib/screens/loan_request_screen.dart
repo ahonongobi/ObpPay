@@ -1,5 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:obppay/providers/user_provider.dart';
+import 'package:obppay/services/api.dart';
 import 'package:obppay/themes/app_colors.dart';
+import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import '../main.dart';
 
 class LoanRequestScreen extends StatefulWidget {
   const LoanRequestScreen({super.key});
@@ -12,7 +20,7 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
   String? selectedCategory;
   final TextEditingController otherCategoryController = TextEditingController();
   final TextEditingController amountController = TextEditingController();
-
+  final TextEditingController notesController = TextEditingController();
   // Exemple d’éligibilité (entre 0 et 1)
   double eligibility = 0.72; // 72%
 
@@ -25,12 +33,115 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
     {"label": "Autres", "icon": Icons.more_horiz},
   ];
 
+  void showLoanNotification(String amount, String category) {
+    const AndroidNotificationDetails androidDetails =
+    AndroidNotificationDetails(
+      'loan_channel',          // Channel ID
+      'Loan Requests',         // Channel name
+      importance: Importance.max,
+      priority: Priority.high,
+
+      ongoing: true,           // Makes it persistent (sticky)
+      autoCancel: false,       // Don’t remove it automatically
+      playSound: true,
+      enableVibration: true,
+
+      icon: '@mipmap/ic_launcher',
+    );
+
+    const NotificationDetails notifDetails =
+    NotificationDetails(android: androidDetails);
+
+    flutterLocalNotificationsPlugin.show(
+      2, // Unique ID
+      "Demande de prêt envoyée",
+      "Vous avez demandé $amount XOF ($category)",
+      notifDetails,
+    );
+  }
+
+
+  Future<void> submitLoanRequest() async {
+    final token = context.read<UserProvider>().token;
+
+    final url = Uri.parse("${Api.baseUrl}/loan/request");
+
+    final categoryToSend = selectedCategory == "Autres"
+        ? otherCategoryController.text.trim()
+        : (selectedCategory ??  "Autre");
+
+    final body = {
+      "category": categoryToSend,
+      "custom_category": selectedCategory == "Autres"
+          ? otherCategoryController.text.trim()
+          : null,
+      "amount": double.tryParse(amountController.text) ?? 0,
+      "notes": notesController.text.trim(),
+    };
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode(body),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 201) {
+
+        showLoanNotification(
+          amountController.text,
+          categoryToSend ?? 'Autre',
+        );
+        // SUCCESS
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Demande envoyée avec succès 🎉"),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        Navigator.pop(context); // Back to previous screen
+      } else {
+        // ERROR
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(data["message"] ?? "Erreur lors de l'envoi."),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Impossible de contacter le serveur."),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
+
+    final provider = context.watch<UserProvider>();
+    final user = context.watch<UserProvider>().user;
+
+    final score = provider.user.score;
+    final progress = (score / 50).clamp(0, 1).toDouble(); // 0 → 1
+
+    final isEligible = provider.loanEligibility == 1;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          "Demande d'aide",
+          "Demande d'aide/prêt",
           style: TextStyle(color: Colors.black),
         ),
         backgroundColor: Colors.white,
@@ -182,21 +293,21 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
                       Row(
                         children: [
                           Text(
-                            "${(eligibility * 100).toInt()}%",
+                            "${provider.user.score} Points",
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
-                              color: eligibility >= 0.5
+                              color: provider.loanEligibility == 1
                                   ? AppColors.primaryIndigo
                                   : Colors.orange,
                             ),
                           ),
                           const SizedBox(width: 6),
                           Icon(
-                            eligibility >= 0.5
+                            provider.loanEligibility == 1
                                 ? Icons.check_circle
                                 : Icons.warning_amber_rounded,
-                            color: eligibility >= 0.5
+                            color: provider.loanEligibility == 1
                                 ? Colors.green
                                 : Colors.orange,
                             size: 22,
@@ -209,10 +320,11 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
                   const SizedBox(height: 14),
 
                   // --- Gradient progress bar as premium ---
+
                   TweenAnimationBuilder<double>(
                     duration: const Duration(milliseconds: 500),
                     curve: Curves.easeOut,
-                    tween: Tween<double>(begin: 0, end: eligibility),
+                    tween: Tween<double>(begin: 0, end: progress),
                     builder: (context, value, _) {
                       return Container(
                         height: 12,
@@ -252,12 +364,11 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
 
                   // --- Message text ---
                   Text(
-                    eligibility >= 0.5
-                        ? "Vous êtes éligible pour un prêt substantiel."
-                        : "Éligibilité faible. Complétez plus d'informations.",
+                    provider.loanMessage,
+
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey.shade700,
+                      color: provider.loanEligibility == 1 ? Colors.grey.shade700 : Colors.red,
                     ),
                   ),
                 ],
@@ -283,11 +394,12 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
 
                   TextField(
                     controller: amountController,
+                    enabled: isEligible,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
                       hintText: "Ex : 150 000 XOF",
                       filled: true,
-                      fillColor: Colors.grey.shade100,
+                      fillColor: isEligible ? Colors.grey.shade100 : Colors.grey.shade300,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -299,19 +411,33 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
                 ],
               ),
 
+            const Text(
+              "Motif (facultatif)",
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+            ),
+            const SizedBox(height: 6),
+            TextField(
+              controller: notesController,
+              enabled: isEligible,
+              keyboardType: TextInputType.text,
+              maxLines: 2,
+              decoration: InputDecoration(
+                hintText: "Ex: Pour l’achat / remboursement",
+                filled: true,
+                fillColor: isEligible ? Colors.grey.shade100 : Colors.grey.shade300,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
             // ===== SUBMIT BUTTON =====
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () {
-                  String categoryToSend = selectedCategory == "Autres"
-                      ? otherCategoryController.text.trim()
-                      : selectedCategory ?? "";
-
-                  debugPrint("CATEGORY: $categoryToSend");
-                  debugPrint("AMOUNT: ${amountController.text}");
-                },
+                onPressed: isEligible ? submitLoanRequest : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryIndigo,
                   shape: RoundedRectangleBorder(

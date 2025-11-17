@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:obppay/providers/user_provider.dart';
+import 'package:obppay/screens/ObpPayCard_screen.dart';
 import 'package:obppay/screens/dashboard_screen.dart';
 import 'package:obppay/screens/kyc_upload_screen.dart';
 import 'package:obppay/screens/loan_request_screen.dart';
@@ -94,10 +95,14 @@ class _MainLayoutState extends State<MainLayout>
     ProfileScreen(),
     LoanRequestScreen(),
     KycUploadScreen(),
+   // ObpPayCardScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
+
+    final user = context.watch<UserProvider>().user;
+
     return ShowCaseWidget(
       builder: Builder(
         builder: (context) {
@@ -146,50 +151,67 @@ class _MainLayoutState extends State<MainLayout>
                                   bottomLeft: Radius.circular(28),
                                 ),
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
 
-                                  const SizedBox(height: 60),
+                                    const SizedBox(height: 80),
 
-                                  menuItem(Icons.home_outlined, "Accueil", () {
-                                    setState(() => currentIndex = 0);
-                                  }),
+                                    menuItem(Icons.home_outlined, "Accueil", () {
+                                      setState(() => currentIndex = 0);
+                                    }),
 
-                                  menuItem(Icons.storefront_outlined, "Boutique", () {
-                                    setState(() => currentIndex = 1);
-                                  }),
+                                    menuItem(Icons.storefront_outlined, "Boutique", () {
+                                      setState(() => currentIndex = 1);
+                                    }),
 
-                                  menuItem(Icons.call_received, "Déposer", () {
-                                    setState(() => currentIndex = 2);
-                                  }),
+                                    menuItem(Icons.call_received, "Déposer", () {
+                                      setState(() => currentIndex = 2);
+                                    }),
 
-                                  menuItem(Icons.sync_alt, "Transfert", () {
-                                    setState(() => currentIndex = 3);
-                                  }),
+                                    menuItem(Icons.sync_alt, "Transfert", () {
+                                      setState(() => currentIndex = 3);
+                                    }),
 
-                                  menuItem(Icons.support_agent, "Prêt/Aide", () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (_) => const LoanRequestScreen()),
-                                    );
-                                  }),
+                                    menuItem(Icons.support_agent, "Prêt/Aide", () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (_) => const LoanRequestScreen()),
+                                      );
+                                    }),
 
-                                  menuItem(Icons.person_outline, "Profil", () {
-                                    setState(() => currentIndex = 4);
-                                  }),
+                                    menuItem(Icons.person_outline, "Profil", () {
+                                      setState(() => currentIndex = 4);
+                                    }),
 
-                                  menuItem(Icons.verified_user, "Verifier ID", () {
+                                    menuItem(Icons.verified_user, "Verifier ID", () {
 
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (_) => const KycUploadScreen()),
-                                    );
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (_) => const KycUploadScreen()),
+                                      );
 
-                                  }),
+                                    }),
+
+                                    menuItem(Icons.credit_card, "ObpPay Card", () {
+
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (_) => ObpPayCardScreen(
+                                          name: user.fullName,
+                                          obpId: user.obpayId,
+                                          balance: user.balance.toString(),
+                                          expiry: user.registeredAt,
+                                          cvv: user.cvv,
+                                        )),
+                                      );
+
+                                    }),
 
 
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -296,7 +318,7 @@ class _MainLayoutState extends State<MainLayout>
             Text(
               label,
               style: const TextStyle(
-                fontSize: 18,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
             ),

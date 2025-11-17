@@ -183,7 +183,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 40),
 
               const Text(
-                "Bienvenue sur ObPay !",
+                "Bienvenue sur ObpPay !",
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,

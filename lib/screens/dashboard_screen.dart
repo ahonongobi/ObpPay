@@ -176,11 +176,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 );
               },
-              child: const CircleAvatar(
+              child: CircleAvatar(
                 radius: 20,
                 backgroundColor: Colors.white,
-                child: Icon(Icons.person, color: Colors.black),
+                backgroundImage: user.avatarUrl != null
+                    ? NetworkImage(user.avatarUrl!)
+                    : const NetworkImage(
+                  "https://i.postimg.cc/nhqCkh77/default-avatar-icon-of-social-media-user-vector.jpg",
+                ),
               ),
+
             ),
           ),
         ],
@@ -268,7 +273,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Row(
                         children: [
                           Text(
-                            "ID-ObpPay: $obp_id",
+                            "ID ObpPay: $obp_id",
                             style: TextStyle(
                               color: Colors.white70,
                               fontSize: 14,

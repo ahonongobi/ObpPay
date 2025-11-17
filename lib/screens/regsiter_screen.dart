@@ -166,7 +166,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               // --- Title ---
               const Text(
-                "Créez votre compte ObPay",
+                "Créez votre compte ObpPay",
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w700,

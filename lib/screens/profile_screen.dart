@@ -11,7 +11,8 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<UserProvider>().user;
-
+    final provider = context.watch<UserProvider>();
+    final isEligible = provider.loanEligibility == 1;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -36,10 +37,34 @@ class ProfileScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  const CircleAvatar(
-                    radius: 45,
-                    backgroundImage: AssetImage("assets/images/logo.png"),
+                  Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      CircleAvatar(
+                        radius: 45,
+                        backgroundImage: user.avatarUrl != null
+                            ? NetworkImage(user.avatarUrl!)
+                            : const AssetImage("assets/images/logo.png") as ImageProvider,
+                      ),
+
+                      // --- Petit bouton edit ---
+                      GestureDetector(
+                        onTap: () async {
+                          final provider = context.read<UserProvider>();
+                          await provider.pickAndUploadProfileImage(context);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryIndigo,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.edit, size: 18, color: Colors.white),
+                        ),
+                      )
+                    ],
                   ),
+
 
                   const SizedBox(height: 20),
 
@@ -53,14 +78,14 @@ class ProfileScreen extends StatelessWidget {
                   Row(
                     children: [
                       Icon(Icons.verified,
-                          color: user.isEligible ? Colors.green : Colors.red),
+                          color: isEligible ? Colors.green : Colors.red),
                       const SizedBox(width: 10),
                       Text(
-                        user.isEligible
-                            ? "Éligible (Points : ${user.points})"
-                            : "Non Éligible (Points : ${user.points})",
+                        isEligible
+                            ? "Éligible (Points : ${user.score})"
+                            : "Non Éligible (Points : ${user.score})",
                         style: TextStyle(
-                          color: user.isEligible ? Colors.green : Colors.red,
+                          color: isEligible ? Colors.green : Colors.red,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
