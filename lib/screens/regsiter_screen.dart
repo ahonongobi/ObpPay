@@ -295,24 +295,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade300),
-                  color: Colors.grey.shade100,
+                  border: Border.all(color: Theme.of(context).dividerColor),
+                  color: Theme.of(context).colorScheme.surface,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                     Text(
                       "Générer un numéro ObPay",
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
+                     Text(
                       "Votre identifiant unique pour les transactions.",
                       style: TextStyle(
-                        color: Colors.black54,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                         fontSize: 14,
                       ),
                     ),
@@ -324,7 +325,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
-                        color: Colors.white,
+                        color: Theme.of(context).cardColor,
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -350,7 +351,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ),
                               );
                             },
-                            child: const Icon(Icons.copy, size: 22),
+                            child: const Icon(Icons.copy, size: 22, color: AppColors.primaryIndigo),
                           ),
                         ],
                       ),

@@ -42,7 +42,10 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: themeProvider.isDarkMode ? darkTheme : lightTheme,
+        theme: lightTheme,
+        darkTheme: darkTheme,
+        themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+
 
         //home: const Placeholder(),
       home: const SplashScreen()

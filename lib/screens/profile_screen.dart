@@ -1,26 +1,51 @@
 import 'package:flutter/material.dart';
+import 'package:obppay/screens/Notification_Screen.dart';
+import 'package:obppay/screens/kycverification_screen.dart';
 import 'package:obppay/screens/login_screen.dart';
+import 'package:obppay/screens/setting_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
 import '../themes/app_colors.dart';
 import 'edit_profile_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      context.read<UserProvider>().refreshUser();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final user = context.watch<UserProvider>().user;
     final provider = context.watch<UserProvider>();
+    final theme = Theme.of(context);
+
     final isEligible = provider.loanEligibility == 1;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
+
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0.4,
         centerTitle: true,
-        title: const Text("Profil",
-            style: TextStyle(fontWeight: FontWeight.w600)),
+        title: Text(
+          "Profil",
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onBackground,
+          ),
+        ),
       ),
 
       body: SingleChildScrollView(
@@ -28,11 +53,12 @@ class ProfileScreen extends StatelessWidget {
         child: Column(
           children: [
 
-            // ------- INFO CARD -------
+            // ===== PROFILE CARD =====
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade200),
+                color: theme.colorScheme.surface,
+                border: Border.all(color: theme.dividerColor),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
@@ -47,7 +73,7 @@ class ProfileScreen extends StatelessWidget {
                             : const AssetImage("assets/images/logo.png") as ImageProvider,
                       ),
 
-                      // --- Petit bouton edit ---
+                      // EDIT BUTTON
                       GestureDetector(
                         onTap: () async {
                           final provider = context.read<UserProvider>();
@@ -55,7 +81,7 @@ class ProfileScreen extends StatelessWidget {
                         },
                         child: Container(
                           padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: AppColors.primaryIndigo,
                             shape: BoxShape.circle,
                           ),
@@ -65,16 +91,30 @@ class ProfileScreen extends StatelessWidget {
                     ],
                   ),
 
-
                   const SizedBox(height: 20),
 
-                  _infoRow(Icons.person_outline, "Nom complet", user.fullName),
-                  _infoRow(Icons.wallet, "ID ObPay", user.obpayId),
-                  _infoRow(Icons.phone, "Téléphone", user.phone),
+                  _infoRow(
+                    context,
+                    Icons.person_outline,
+                    "Nom complet",
+                    user.fullName,
+                  ),
 
-                  const SizedBox(height: 6),
+                  _infoRow(
+                    context,
+                    Icons.wallet,
+                    "ID ObPay",
+                    user.obpayId,
+                  ),
 
-                  // -------- BADGE ELIGIBILITÉ --------
+                  _infoRow(
+                    context,
+                    Icons.phone,
+                    "Téléphone",
+                    user.phone,
+                  ),
+
+                  // ===== ELIGIBILITY BADGE =====
                   Row(
                     children: [
                       Icon(Icons.verified,
@@ -97,18 +137,22 @@ class ProfileScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // ------- Settings -------
+            // ===== SETTINGS SECTION =====
             Container(
               padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: theme.dividerColor),
               ),
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.edit),
-                    title: const Text("Modifier le profil"),
+                    leading: Icon(Icons.edit, color: theme.colorScheme.onBackground),
+                    title: Text(
+                      "Modifier le profil",
+                      style: TextStyle(color: theme.colorScheme.onBackground),
+                    ),
                     onTap: () {
                       Navigator.push(
                         context,
@@ -116,17 +160,62 @@ class ProfileScreen extends StatelessWidget {
                       );
                     },
                   ),
-                  const Divider(),
+
+                  Divider(color: theme.dividerColor),
+
                   ListTile(
-                    leading: const Icon(Icons.settings_outlined),
-                    title: const Text("Paramètres"),
-                    onTap: () {},
+                    leading:
+                    Icon(Icons.settings_outlined, color: theme.colorScheme.onBackground),
+                    title: Text(
+                      "Paramètres",
+                      style: TextStyle(color: theme.colorScheme.onBackground),
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                      );
+                    },
                   ),
-                  const Divider(),
+                  ListTile(
+                    leading:
+                    Icon(Icons.verified_user, color: theme.colorScheme.onBackground),
+                    title: Text(
+                      "KYC & Vérification",
+                      style: TextStyle(color: theme.colorScheme.onBackground),
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const KycVerificationScreen()),
+                      );
+                    },
+                  ),
+
+                  // NotificationScreen
+                  ListTile(
+                    leading:
+                    Icon(Icons.notifications, color: theme.colorScheme.onBackground),
+                    title: Text(
+                      "Notifications",
+                      style: TextStyle(color: theme.colorScheme.onBackground),
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const NotificationScreen()),
+                      );
+                    },
+                  ),
+
+                  Divider(color: theme.dividerColor),
+
                   ListTile(
                     leading: const Icon(Icons.logout, color: Colors.red),
-                    title: const Text("Se déconnecter",
-                        style: TextStyle(color: Colors.red)),
+                    title: const Text(
+                      "Se déconnecter",
+                      style: TextStyle(color: Colors.red),
+                    ),
                     onTap: () async {
                       await context.read<UserProvider>().logout();
 
@@ -136,7 +225,6 @@ class ProfileScreen extends StatelessWidget {
                             (route) => false,
                       );
                     },
-
                   ),
                 ],
               ),
@@ -147,7 +235,17 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _infoRow(IconData icon, String title, String value) {
+  // =======================
+  // INFO ROW FIXED + THEME
+  // =======================
+  Widget _infoRow(
+      BuildContext context,
+      IconData icon,
+      String title,
+      String value,
+      ) {
+    final theme = Theme.of(context);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -155,17 +253,31 @@ class ProfileScreen extends StatelessWidget {
         children: [
           Icon(icon, color: AppColors.primaryIndigo),
           const SizedBox(width: 10),
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: const TextStyle(fontSize: 13, color: Colors.black54)),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(value,
-                    style: const TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w600)),
-                const Divider(height: 20),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onBackground,
+                  ),
+                ),
+                Divider(
+                  height: 20,
+                  color: theme.dividerColor,
+                ),
               ],
             ),
           ),

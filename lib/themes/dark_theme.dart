@@ -15,6 +15,8 @@ final ThemeData darkTheme = ThemeData(
     secondary: AppColors.accentGold,
     background: Color(0xFF0E0E0E),
     surface: Color(0xFF1A1A1A),
+    onBackground: Colors.white,
+    onSurface: Colors.white70,
   ),
 
   // --- APPBAR ---

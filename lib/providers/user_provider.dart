@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:obppay/model/user_model.dart';
+import 'package:obppay/services/wallet_service.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
 import '../services/api.dart';
@@ -23,6 +24,8 @@ class UserProvider extends ChangeNotifier {
 
   int loanEligibility = 0; // 0 = not eligible, 1 = eligible
   String loanMessage = "";
+
+  List<dynamic> transactions = [];
 
   Future<void> fetchScore() async {
     if (token == null) return;
@@ -46,6 +49,19 @@ class UserProvider extends ChangeNotifier {
       }
     } catch (_) {}
   }
+
+
+  Future<void> loadTransactions() async {
+    if (token == null) return;
+
+    try {
+      transactions = await WalletService.fetchTransactions(token!);
+      notifyListeners();
+    } catch (e) {
+      print("❌ Error loading transactions: $e");
+    }
+  }
+
 
 
   Future<void> loadUserFromApi() async {
@@ -185,7 +201,7 @@ class UserProvider extends ChangeNotifier {
 
       // ---- 1) Upload au backend ----
       final newUrl = await uploadProfileImage(imageFile, provider.token!);
-
+      await provider.loadUserFromApi();
       // ---- 2) Mettre à jour l'objet user ----
       user.avatarUrl = newUrl;
       provider.notifyListeners();
@@ -213,11 +229,19 @@ class UserProvider extends ChangeNotifier {
 
     if (response.statusCode == 200) {
       final json = jsonDecode(body);
-      return json["avatar_url"]; // 🔥 Doit matcher ton backend
+      return json["avatar_url"]; // Doit matcher ton backend
     } else {
       throw "Upload failed (${response.statusCode})";
     }
   }
+
+
+
+  Future<void> refreshUser() async {
+    if (token == null) return;
+    await loadUserFromApi();
+  }
+
 
 
 

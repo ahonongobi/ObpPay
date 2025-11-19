@@ -1,6 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:obppay/providers/user_provider.dart';
 import 'package:obppay/screens/otp_screen.dart';
+import 'package:obppay/services/kyc_service.dart';
 import 'package:obppay/themes/app_colors.dart';
+import 'package:provider/provider.dart';
 
 class KycUploadScreen extends StatefulWidget {
   const KycUploadScreen({super.key});
@@ -9,25 +15,139 @@ class KycUploadScreen extends StatefulWidget {
   State<KycUploadScreen> createState() => _KycUploadScreenState();
 }
 
+
+
+
 class _KycUploadScreenState extends State<KycUploadScreen> {
   bool idUploaded = false;
   bool passportUploaded = false;
   bool selfieUploaded = false;
 
+  bool get isKycComplete {
+    return selfieUploaded && (idUploaded || passportUploaded);
+  }
+
+  void _checkAutoSubmit() {
+    if (isKycComplete) {
+      Future.delayed(const Duration(milliseconds: 200), () {
+        _showSubmitDialog();
+      });
+    }
+  }
+
+  Future<void> _showSubmitDialog() async {
+    final theme = Theme.of(context);
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) {
+        return AlertDialog(
+          backgroundColor: theme.colorScheme.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            "Soumettre les documents ?",
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onBackground,
+            ),
+          ),
+          content: Text(
+            "Vous avez fourni les documents nécessaires. Souhaitez-vous les soumettre maintenant pour vérification ?",
+            style: TextStyle(color: theme.colorScheme.onSurface),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Annuler", style: TextStyle(color: theme.colorScheme.onSurface)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _submitKycDocuments();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryIndigo,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text("Soumettre"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _submitKycDocuments() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Documents soumis pour vérification."),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    // TODO: Appeler ici votre API: /kyc/submit
+  }
+
+
+
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    Future<bool> pickAndUpload(String type) async {
+      final provider = context.read<UserProvider>();
+      final picker = ImagePicker();
+
+      XFile? picked;
+
+      if (type == "selfie") {
+        // Selfie depuis la caméra
+        picked = await picker.pickImage(source: ImageSource.camera);
+      } else {
+        // ID / Passeport depuis la galerie
+        picked = await picker.pickImage(source: ImageSource.gallery);
+      }
+      if (picked == null) return false;
+
+      final file = File(picked.path);
+
+      final result = await KycService.upload(
+        token: provider.token!,
+        file: file,
+        type: type,
+      );
+
+      return result["success"] == true;
+    }
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+
       appBar: AppBar(
-        title: const Text("Vérification d'identité"),
+        backgroundColor: theme.scaffoldBackgroundColor,
+        elevation: 0.4,
+        iconTheme: IconThemeData(color: theme.colorScheme.onBackground),
+        title: Text(
+          "Vérification d'identité",
+          style: TextStyle(color: theme.colorScheme.onBackground),
+        ),
       ),
+
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+
               // --- Étape ---
-              const Text(
+              Text(
                 "Étape 1 sur 1",
                 style: TextStyle(
                   color: AppColors.primaryIndigo,
@@ -35,120 +155,103 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                 ),
               ),
               const SizedBox(height: 6),
+
               ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: LinearProgressIndicator(
                   value: 1,
-                  backgroundColor: Colors.grey.shade300,
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    AppColors.primaryIndigo,
-                  ),
+                  backgroundColor: theme.colorScheme.surface.withOpacity(0.4),
+                  valueColor: const AlwaysStoppedAnimation(AppColors.primaryIndigo),
                   minHeight: 6,
                 ),
               ),
 
               const SizedBox(height: 24),
 
-              const Text(
+              Text(
                 "Vérifiez votre identité",
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onBackground,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+
+              Text(
                 "Ajoutez vos documents pour sécuriser votre compte ObPay.",
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.black54,
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
                 ),
               ),
 
               const SizedBox(height: 28),
 
-              // ---- Carte d'identité / CIP ----
+              // ---- Carte d'identité ----
               _buildKycCard(
+                context: context,
                 title: "Carte d'identité / CIP",
                 subtitle: "Photo claire du recto (et verso si possible).",
                 icon: Icons.badge_outlined,
                 isUploaded: idUploaded,
-                onTap: () {
-                  // TODO: ouvrir picker / caméra
-                  setState(() => idUploaded = true);
-                },
+                onTap: () async {
+                  final result = await pickAndUpload('id_card');
+                  if (result) {
+                    setState(() => idUploaded = true);
+                    _checkAutoSubmit();
+                  }
+                }
               ),
 
               const SizedBox(height: 16),
 
               // ---- Passeport ----
               _buildKycCard(
+                context: context,
                 title: "Passeport",
                 subtitle: "Page principale avec votre photo.",
                 icon: Icons.travel_explore_outlined,
                 isUploaded: passportUploaded,
-                onTap: () {
-                  // TODO: ouvrir picker / caméra
-                  setState(() => passportUploaded = true);
-                },
+                onTap: () async {
+                  final result = await pickAndUpload('passport');
+                  if (result) {
+                    setState(() => passportUploaded = true);
+                    _checkAutoSubmit();
+                  }
+                }
               ),
 
               const SizedBox(height: 16),
 
               // ---- Selfie ----
               _buildKycCard(
+                context: context,
                 title: "Selfie en temps réel",
                 subtitle: "Prenez une photo de vous, visage bien visible.",
                 icon: Icons.camera_alt_outlined,
                 isUploaded: selfieUploaded,
                 buttonLabel: "Prendre une photo",
-                onTap: () {
-                  // TODO: ouvrir caméra
-                  setState(() => selfieUploaded = true);
-                },
+                onTap: () async {
+                  final result = await pickAndUpload('selfie');
+                  if (result) {
+                    setState(() => selfieUploaded = true);
+                    _checkAutoSubmit();
+                  }
+                }
               ),
 
               const SizedBox(height: 32),
 
-              // ---- Bouton Continuer ----
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: () {
-                    // TODO: vérifier si tous les docs sont uploadés
-                    // TODO: naviguer vers l'écran OTP (Étape 3)
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const OtpScreen(purpose: "reset")),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryIndigo,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: const Text(
-                    "Soumettre",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
 
               const SizedBox(height: 16),
 
               if (!(idUploaded && passportUploaded && selfieUploaded))
-                const Text(
+                Text(
                   "Astuce : pour accélérer la validation, assurez-vous que vos photos sont nettes et lisibles.",
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.black54,
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
                   ),
                 ),
             ],
@@ -159,6 +262,7 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
   }
 
   Widget _buildKycCard({
+    required BuildContext context,
     required String title,
     required String subtitle,
     required IconData icon,
@@ -166,53 +270,59 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
     required VoidCallback onTap,
     String buttonLabel = "Téléverser un document",
   }) {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade300),
-        color: Colors.grey.shade50,
+        border: Border.all(color: theme.dividerColor),
       ),
+
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+
           Row(
             children: [
               Icon(icon, color: AppColors.primaryIndigo),
               const SizedBox(width: 10),
+
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 16,
+                    color: theme.colorScheme.onBackground,
                   ),
                 ),
               ),
-              if (isUploaded)
-                const Row(
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.green, size: 18),
-                    SizedBox(width: 4),
-                    Text(
-                      "Ajouté",
-                      style: TextStyle(
-                        color: Colors.green,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
+
+              isUploaded
+                  ? const Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green, size: 18),
+                  SizedBox(width: 4),
+                  Text(
+                    "Ajouté",
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                     ),
-                  ],
-                )
-              else
-                const Text(
-                  "Non ajouté",
-                  style: TextStyle(
-                    color: Colors.redAccent,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
                   ),
+                ],
+              )
+                  : Text(
+                "Non ajouté",
+                style: TextStyle(
+                  color: Colors.redAccent,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
                 ),
+              ),
             ],
           ),
 
@@ -220,9 +330,9 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
 
           Text(
             subtitle,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: Colors.black54,
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
             ),
           ),
 
@@ -233,19 +343,21 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
             height: 45,
             child: OutlinedButton.icon(
               onPressed: onTap,
-              icon: const Icon(Icons.upload_file, size: 18),
+              icon: Icon(Icons.upload_file,
+                  size: 18, color: theme.colorScheme.onBackground),
               label: Text(
                 buttonLabel,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
+                  color: theme.colorScheme.onBackground,
                 ),
               ),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(
                   color: isUploaded
                       ? AppColors.primaryIndigo
-                      : Colors.grey.shade400,
+                      : theme.dividerColor,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),

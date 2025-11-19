@@ -15,6 +15,8 @@ final ThemeData lightTheme = ThemeData(
     secondary: AppColors.accentGold,
     background: Colors.white,
     surface: Colors.white,
+    onBackground: Colors.black,
+    onSurface: Colors.black87,
   ),
 
   // --- APPBAR ---

@@ -158,16 +158,23 @@ class _OtpScreenState extends State<OtpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Vérification OTP"),
+        title: Text(
+          "Vérification OTP",
+          style: TextStyle(color: theme.colorScheme.onBackground),
+        ),
+        backgroundColor: theme.scaffoldBackgroundColor,
+        elevation: 0.4,
+        iconTheme: IconThemeData(color: theme.colorScheme.onBackground),
       ),
 
       body: SafeArea(
         child: Column(
           children: [
 
-            // ---------- CONTENU SCROLLABLE ----------
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -177,7 +184,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
                     const SizedBox(height: 10),
 
-                    const Text(
+                    Text(
                       "Étape 2 sur 2",
                       style: TextStyle(
                         color: AppColors.primaryIndigo,
@@ -191,35 +198,36 @@ class _OtpScreenState extends State<OtpScreen> {
                       borderRadius: BorderRadius.circular(20),
                       child: LinearProgressIndicator(
                         value: 1.0,
-                        backgroundColor: Colors.grey.shade300,
-                        valueColor: AlwaysStoppedAnimation(AppColors.primaryIndigo),
+                        backgroundColor: theme.colorScheme.surface.withOpacity(0.4),
+                        valueColor: const AlwaysStoppedAnimation(AppColors.primaryIndigo),
                         minHeight: 6,
                       ),
                     ),
 
                     const SizedBox(height: 30),
 
-                    const Text(
+                    Text(
                       "Vérifiez votre numéro",
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
+                        color: theme.colorScheme.onBackground,
                       ),
                     ),
 
                     const SizedBox(height: 10),
 
-                    const Text(
+                    Text(
                       "Un code de confirmation à 4 chiffres vous a été envoyé.",
                       style: TextStyle(
                         fontSize: 10,
-                        color: Colors.black54,
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
                       ),
                     ),
 
                     const SizedBox(height: 30),
 
-                    // ----------- OTP BOXES (4) -----------
+                    // OTP BOXES
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: List.generate(4, (i) {
@@ -229,20 +237,21 @@ class _OtpScreenState extends State<OtpScreen> {
                           height: 60,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
+                            color: theme.colorScheme.surface,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: filled
                                   ? AppColors.primaryIndigo
-                                  : Colors.grey.shade300,
+                                  : theme.dividerColor,
                               width: filled ? 2 : 1,
                             ),
                           ),
                           child: Text(
                             code[i],
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onBackground,
                             ),
                           ),
                         );
@@ -251,12 +260,12 @@ class _OtpScreenState extends State<OtpScreen> {
 
                     const SizedBox(height: 20),
 
-                    // ---- TIMER ----
                     Center(
                       child: timerSeconds > 0
                           ? Text(
                         "Renvoyer dans $timerSeconds s",
-                        style: const TextStyle(color: Colors.black54),
+                        style: TextStyle(
+                            color: theme.colorScheme.onSurface.withOpacity(0.7)),
                       )
                           : GestureDetector(
                         onTap: () async {
@@ -276,7 +285,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
                     const SizedBox(height: 20),
 
-                    // ---- BOUTON VÉRIFIER ----
+                    // BUTTON
                     SizedBox(
                       width: double.infinity,
                       height: 52,
@@ -284,7 +293,8 @@ class _OtpScreenState extends State<OtpScreen> {
                         onPressed: isComplete ? verifyOtp : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryIndigo,
-                          disabledBackgroundColor: Colors.grey.shade400,
+                          disabledBackgroundColor:
+                          theme.colorScheme.onSurface.withOpacity(0.2),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
@@ -294,7 +304,7 @@ class _OtpScreenState extends State<OtpScreen> {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w600,
-                            color: isComplete ? Colors.white : Colors.white70,
+                            color: Colors.white,
                           ),
                         ),
                       ),
@@ -309,42 +319,40 @@ class _OtpScreenState extends State<OtpScreen> {
         ),
       ),
 
-      // ---------- NUMPAD (RÉDUIT) ----------
+      // NUMPAD
       bottomNavigationBar: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _numRow(["1", "2", "3"]),
-            _numRow(["4", "5", "6"]),
-            _numRow(["7", "8", "9"]),
-            _numRow(["", "0", "<"]),
+            _numRow(["1", "2", "3"], theme),
+            _numRow(["4", "5", "6"], theme),
+            _numRow(["7", "8", "9"], theme),
+            _numRow(["", "0", "<"], theme),
           ],
         ),
       ),
     );
   }
 
-  // ---------- ROW ----------
-  Widget _numRow(List<String> items) {
+// ---------- NUMPAD ROW ----------
+  Widget _numRow(List<String> items, ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: items
-            .map((item) => item == ""
-            ? const SizedBox(width: 60)
-            : item == "<"
-            ? _numButton(icon: Icons.backspace_outlined, onTap: onDelete)
-            : _numButton(text: item, onTap: () => onNumberTap(item)))
-            .toList(),
+        children: items.map((item) {
+          if (item == "") return const SizedBox(width: 60);
+          if (item == "<") return _numButton(icon: Icons.backspace_outlined, theme: theme, onTap: onDelete);
+          return _numButton(text: item, theme: theme, onTap: () => onNumberTap(item));
+        }).toList(),
       ),
     );
   }
 
-  // ---------- BUTTON ----------
-  Widget _numButton({String? text, IconData? icon, required VoidCallback onTap}) {
+// ---------- NUMPAD BUTTON ----------
+  Widget _numButton({String? text, IconData? icon, required VoidCallback onTap, required ThemeData theme}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -352,16 +360,17 @@ class _OtpScreenState extends State<OtpScreen> {
         height: 50,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
         ),
         child: icon != null
-            ? Icon(icon, size: 22)
+            ? Icon(icon, size: 22, color: theme.iconTheme.color)
             : Text(
           text!,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onBackground,
           ),
         ),
       ),

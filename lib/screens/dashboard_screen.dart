@@ -9,11 +9,14 @@ import 'package:obppay/screens/QRScan_screen.dart';
 import 'package:obppay/screens/deposit_screen.dart';
 import 'package:obppay/screens/main_layout.dart';
 import 'package:obppay/screens/marketplace_screen.dart';
+import 'package:obppay/screens/transactions_screen.dart';
 import 'package:obppay/services/api.dart';
 import 'package:obppay/themes/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/date_symbol_data_local.dart';
+
 
 
 class DashboardScreen extends StatefulWidget {
@@ -37,8 +40,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-
-
+    initializeDateFormatting("fr_FR", null);
+    Future.microtask(() {
+     // context.read<UserProvider>().refreshUser();
+      final provider = context.read<UserProvider>();
+      provider.refreshUser();
+      provider.loadTransactions();
+    });
     // Fetch balance when dashboard opens
     fetchWalletBalance();
 
@@ -70,6 +78,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         });
 
         Future.delayed(const Duration(milliseconds: 450), () {
+          if (!mounted) return;
           if (mounted) {
             setState(() {
               highlightBalance = false;
@@ -98,6 +107,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     // Hide after animation
     Future.delayed(const Duration(seconds: 5), () {
+      if (!mounted) return;
       if (mounted) {
         setState(() => showFloatingPoints = false);
       }
@@ -106,6 +116,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Green flash for balance (already implemented)
     setState(() => highlightBalance = true);
     Future.delayed(const Duration(milliseconds: 450), () {
+      if (!mounted) return;
       if (mounted) setState(() => highlightBalance = false);
     });
   }
@@ -129,6 +140,67 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  IconData _mapTypeToIcon(String type) {
+    switch (type) {
+      case "deposit":
+        return Icons.call_received; // flèche vers le bas
+
+      case "transfer_in":
+        return Icons.arrow_downward; // reçu
+
+      case "transfer_out":
+        return Icons.arrow_upward; // envoyé
+
+      case "purchase":
+        return Icons.shopping_cart_outlined;
+
+      case "withdrawal":
+        return Icons.account_balance_wallet_outlined;
+
+      default:
+        return Icons.swap_horiz; // fallback icon
+    }
+  }
+
+  String _mapTypeToTitle(String type) {
+    switch (type) {
+      case "deposit":
+        return "Dépôt";
+
+      case "transfer_in":
+        return "Transfert Reçu";
+
+      case "transfer_out":
+        return "Transfert Envoyé";
+
+      case "purchase":
+        return "Achat";
+
+      case "withdrawal":
+        return "Retrait";
+
+      default:
+        return "Transaction";
+    }
+  }
+
+  Color _mapAmountColor(String type) {
+    if (type == "deposit" || type == "transfer_in") {
+      return Colors.green; // argent entrant
+    }
+    return Colors.red; // argent sortant
+  }
+
+  String _formatAmount(num amount, String currency, String type) {
+    final sign = (type == "deposit" || type == "transfer_in") ? "+" : "-";
+    return "$sign$amount $currency";
+  }
+
+  String _formatDate(String raw) {
+    final date = DateTime.parse(raw);
+    return DateFormat("dd MMM yyyy • HH:mm", "fr_FR").format(date);
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -141,8 +213,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final obp_id = user.obpayId;
     final currency = user.currency;
 
+    final provider = context.watch<UserProvider>();
+    final txList = provider.transactions;
+
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
 
       // --- AppBar ---
       appBar: AppBar(
@@ -161,7 +237,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               MaterialPageRoute(builder: (_) => const QRScanScreen()),
             );
           },
-          icon: const Icon(Icons.qr_code_scanner,
+          icon:  Icon(Icons.qr_code_scanner,
               size: 26, color: Colors.white),
         ),
         actions: [
@@ -178,7 +254,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               },
               child: CircleAvatar(
                 radius: 20,
-                backgroundColor: Colors.white,
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                 backgroundImage: user.avatarUrl != null
                     ? NetworkImage(user.avatarUrl!)
                     : const NetworkImage(
@@ -220,7 +296,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
+                        //color: Colors.black.withOpacity(0.15),
+                        color: Theme.of(context).colorScheme.onBackground.withOpacity(0.15),
                         blurRadius: 12,
                         offset: const Offset(0, 6),
                       ),
@@ -347,7 +424,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 30),
 
                 // ===== TRANSACTIONS =====
-                const Align(
+                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     "Transactions récentes",
@@ -355,7 +432,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
                       //color: Color(0xFF2A2A2A), // gris foncé pro
-                      color: Color(0xFF2A2A2A),
+                      color: Theme.of(context).colorScheme.onBackground,
 
                       shadows: [
                         Shadow(
@@ -370,6 +447,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 
                 const SizedBox(height: 14),
+
+                Column(
+                  children: txList.map((tx) {
+                    final type = tx["type"];
+
+                    return _transactionItem(
+                      icon: _mapTypeToIcon(type),
+                      title: _mapTypeToTitle(type),
+                      subtitle: tx["description"] ?? "",
+                      amount: _formatAmount(
+                        double.tryParse(tx["amount"].toString()) ?? 0,
+                        tx["currency"].toString(),
+                        type,
+                      ),
+                      amountColor: _mapAmountColor(type),
+                      date: _formatDate(tx["created_at"]),
+
+                    );
+                  }).toList(),
+                ),
 
                 Column(
                   children: [
@@ -397,28 +494,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       amountColor: Colors.red,
                       date: "02 Nov, 16:00",
                     ),
-
-                    _transactionItem(
-                      icon: Icons.account_balance_wallet_outlined,
-                      title: "Retrait DAB",
-                      subtitle: "Agence Principale",
-                      amount: "-50 000 XOF",
-                      amountColor: Colors.red,
-                      date: "02 Nov, 16:00",
-                    ),
-
-                    _transactionItem(
-                      icon: Icons.account_balance_wallet_outlined,
-                      title: "Retrait DAB",
-                      subtitle: "Agence Principale",
-                      amount: "-50 000 XOF",
-                      amountColor: Colors.red,
-                      date: "02 Nov, 16:00",
-                    ),
                   ],
                 ),
 
-                const SizedBox(height: 40),
+                // add beautiful Montrer toutes les transactions button
+              Center(
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AllTransactionsScreen()),
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primaryIndigo,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "Voir toutes les transactions",
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Theme.of(context).colorScheme.onBackground.withOpacity(0.85),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(Icons.chevron_right_rounded,
+                          color: Theme.of(context).colorScheme.onBackground),
+                    ],
+                  ),
+                ),
+              ),
+
+
+              const SizedBox(height: 40),
               ],
             ),
           ),
@@ -489,9 +601,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     child: Text(
                       floatingText,
-                      style: const TextStyle(
+                      style:  TextStyle(
                         fontSize: 22,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -514,13 +626,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Container(
         height: 48,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 20, color: Colors.black87),
+            Icon(icon, size: 20, color: Theme.of(context).iconTheme.color),
             const SizedBox(width: 6),
             Flexible(
               child: Text(
@@ -551,17 +663,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 20, color: Colors.white),
+            Icon(icon, size: 20, color: Theme.of(context).iconTheme.color),
             const SizedBox(width: 6),
             Flexible(
               child: Text(
                 title,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
+                  color: Theme.of(context).colorScheme.surface,
+
+              ),
               ),
             ),
           ],
@@ -583,13 +696,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade300, width: 1),
+        border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2), width: 1),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 22, color: Colors.black54),
+          Icon(icon, size: 22, color: Theme.of(context).iconTheme.color),
           const SizedBox(width: 10),
 
           Expanded(
@@ -604,8 +717,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 3),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                      fontSize: 12, color: Colors.black54),
+                  style: TextStyle(
+                      fontSize: 10, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
                 ),
               ],
             ),
@@ -624,8 +737,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 3),
               Text(
                 date,
-                style: const TextStyle(
-                    fontSize: 11, color: Colors.black45),
+                style: TextStyle(
+                    fontSize: 11, color: Theme.of(context).colorScheme.onSurface,),
               ),
             ],
           )

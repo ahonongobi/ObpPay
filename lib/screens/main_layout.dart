@@ -7,6 +7,7 @@ import 'package:obppay/screens/loan_request_screen.dart';
 import 'package:obppay/screens/marketplace_screen.dart';
 import 'package:obppay/screens/deposit_screen.dart';
 import 'package:obppay/screens/profile_screen.dart';
+import 'package:obppay/screens/transactions_screen.dart';
 import 'package:obppay/screens/transfer_screen.dart';
 import 'package:obppay/themes/app_colors.dart';
 import 'package:provider/provider.dart';
@@ -95,6 +96,7 @@ class _MainLayoutState extends State<MainLayout>
     ProfileScreen(),
     LoanRequestScreen(),
     KycUploadScreen(),
+    AllTransactionsScreen(),
    // ObpPayCardScreen(),
   ];
 
@@ -120,6 +122,7 @@ class _MainLayoutState extends State<MainLayout>
                 AnimatedBuilder(
                   animation: _menuController,
                   builder: (context, child) {
+                    final theme = Theme.of(context);
                     return Stack(
                       children: [
 
@@ -132,7 +135,7 @@ class _MainLayoutState extends State<MainLayout>
                               setState(() {});
                             },
                             child: Container(
-                              color: Colors.black.withOpacity(0.3),
+                              color: theme.colorScheme.onBackground.withOpacity(0.3),
                             ),
                           ),
 
@@ -144,8 +147,8 @@ class _MainLayoutState extends State<MainLayout>
                             child: Container(
                               width: MediaQuery.of(context).size.width * 0.65,
                               height: double.infinity,
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
+                              decoration:  BoxDecoration(
+                                color: theme.colorScheme.surface,
                                 borderRadius: BorderRadius.only(
                                   topLeft: Radius.circular(28),
                                   bottomLeft: Radius.circular(28),
@@ -276,7 +279,9 @@ class _MainLayoutState extends State<MainLayout>
             bottomNavigationBar: BottomNavigationBar(
               currentIndex: currentIndex,
               selectedItemColor: AppColors.primaryIndigo,
-              unselectedItemColor: Colors.black45,
+              unselectedItemColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              showUnselectedLabels: true,
+              backgroundColor: Theme.of(context).colorScheme.surface,
               type: BottomNavigationBarType.fixed,
               onTap: (i) {
                 setState(() => currentIndex = i);
@@ -317,8 +322,9 @@ class _MainLayoutState extends State<MainLayout>
             const SizedBox(width: 16),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
+                color: Theme.of(context).colorScheme.onBackground,
                 fontWeight: FontWeight.w600,
               ),
             ),

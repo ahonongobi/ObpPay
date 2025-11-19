@@ -1,8 +1,6 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:obppay/providers/user_provider.dart';
-import 'package:obppay/screens/ConfirmationScreen.dart';
 import 'package:obppay/screens/success_transfer_screen.dart';
 import 'package:obppay/services/api.dart';
 import 'package:obppay/themes/app_colors.dart';
@@ -21,14 +19,10 @@ class _TransferScreenState extends State<TransferScreen> {
   final TextEditingController amountController = TextEditingController();
   final TextEditingController noteController = TextEditingController();
 
-  bool isValid = false;
-  bool loading = false;
-
-  bool isLoading = false;
-
-  String? beneficiaryName;
   bool isCheckingUser = false;
+  bool isLoading = false;
   bool highlightBalance = false;
+  String? beneficiaryName;
 
   bool get isFormValid {
     return idController.text.isNotEmpty &&
@@ -37,117 +31,14 @@ class _TransferScreenState extends State<TransferScreen> {
   }
 
   String formatObpId(String input) {
-    // Remove all non-digits
     String digits = input.replaceAll(RegExp(r'[^0-9]'), '');
 
-    if (digits.length > 2) {
-      digits = digits.substring(0, 2) + '-' + digits.substring(2);
-    }
-    if (digits.length > 6) {
-      digits = digits.substring(0, 6) + '-' + digits.substring(6);
-    }
-    if (digits.length > 10) {
-      digits = digits.substring(0, 10); // Max: 04-123-456 (10 chars)
-    }
+    if (digits.length > 2) digits = "${digits.substring(0, 2)}-${digits.substring(2)}";
+    if (digits.length > 6) digits = "${digits.substring(0, 6)}-${digits.substring(6)}";
+    if (digits.length > 10) digits = digits.substring(0, 10);
 
     return digits;
   }
-
-
-  Future<void> performTransfer() async {
-    setState(() => isLoading = true);
-
-    final token = context.read<UserProvider>().token;
-    final url = Uri.parse("${Api.baseUrl}/wallet/transfer");
-
-    http.Response response;
-
-    try {
-      response = await http.post(
-
-
-        url,
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $token",
-        },
-        body: jsonEncode({
-          "to_obp_id": idController.text.trim(),
-          "amount": double.parse(amountController.text),
-          "note": noteController.text.trim(),
-        }),
-      );
-
-      //print("RAW RESPONSE: ${response.body}");
-      //print("STATUS: ${response.statusCode}");
-      //print("TOKEN USED: $token");
-
-
-    } catch (e) {
-      setState(() => isLoading = false);
-
-      // Network error
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Impossible de contacter le serveur."),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    setState(() => isLoading = false);
-
-    // Try to JSON-decode safely
-    dynamic data;
-    try {
-      data = jsonDecode(response.body);
-
-
-    } catch (_) {
-      data = {"message": "Erreur du serveur. Réponse non valide."};
-    }
-
-    await Future.delayed(const Duration(milliseconds: 500));
-    setState(() => isLoading = false);
-
-
-    if (response.statusCode == 200) {
-
-      final data = jsonDecode(response.body);
-      final newBalance = double.parse(data["new_balance"].toString());
-
-      // UPDATE PROVIDER
-      context.read<UserProvider>().updateBalance(newBalance);
-      // SUCCESS
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => SuccessTransferScreen(
-            receiver: beneficiaryName ?? "Utilisateur ObPay",
-            receiverId: idController.text,
-            amount: amountController.text,
-            note: noteController.text,
-            newBalance: newBalance.toString(),
-          ),
-        ),
-      );
-    } else {
-      // ERROR
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            data["message"] ??
-                "Erreur lors du transfert (${response.statusCode})",
-          ),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
-  }
-
 
   Future<void> fetchBeneficiaryName(String obpId) async {
     if (obpId.isEmpty) {
@@ -158,7 +49,7 @@ class _TransferScreenState extends State<TransferScreen> {
     setState(() => isCheckingUser = true);
 
     final token = context.read<UserProvider>().token;
-    final url = Uri.parse("http://10.0.2.2:8000/api/user/by-obp/$obpId");
+    final url = Uri.parse("${Api.baseUrl}/user/by-obp/$obpId");
 
     try {
       final response = await http.get(
@@ -175,99 +66,100 @@ class _TransferScreenState extends State<TransferScreen> {
       } else {
         setState(() => beneficiaryName = null);
       }
-    } catch (e) {
+    } catch (_) {
       setState(() => beneficiaryName = null);
     }
 
     setState(() => isCheckingUser = false);
   }
 
+  Future<void> performTransfer() async {
+    setState(() => isLoading = true);
 
+    final token = context.read<UserProvider>().token;
+    final url = Uri.parse("${Api.baseUrl}/wallet/transfer");
 
-  Future<bool> showConfirmationDialog() async {
-    return await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Text(
-            "Confirmer le transfert",
-            style: TextStyle(fontWeight: FontWeight.w700),
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "ID bénéficiaire : ${idController.text}",
-                  style: const TextStyle(fontSize: 15),
-                ),
-                const SizedBox(height: 6),
-                if (beneficiaryName != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      "Nom : $beneficiaryName",
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                    ),
-                  ),
+    http.Response response;
 
-                Text(
-                  "Montant : ${amountController.text} XOF",
-                  style: const TextStyle(fontSize: 15),
-                ),
-                if (noteController.text.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      "Motif : ${noteController.text}",
-                      style: const TextStyle(fontSize: 15),
-                    ),
-                  ),
-              ],
-            ),
+    try {
+      response = await http.post(
+        url,
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode({
+          "to_obp_id": idController.text.trim(),
+          "amount": double.parse(amountController.text),
+          "note": noteController.text.trim(),
+        }),
+      );
+    } catch (e) {
+      setState(() => isLoading = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Impossible de contacter le serveur."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => isLoading = false);
+
+    dynamic data;
+    try {
+      data = jsonDecode(response.body);
+    } catch (_) {
+      data = {"message": "Erreur du serveur."};
+    }
+
+    if (response.statusCode == 200) {
+      final newBalance = double.parse(data["new_balance"].toString());
+      context.read<UserProvider>().updateBalance(newBalance);
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SuccessTransferScreen(
+            receiver: beneficiaryName ?? "Utilisateur ObPay",
+            receiverId: idController.text,
+            amount: amountController.text,
+            note: noteController.text,
+            newBalance: newBalance.toString(),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text("Annuler"),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryIndigo,
-              ),
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text("Super"),
-            ),
-          ],
-        );
-      },
-    ) ??
-        false;
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(data["message"] ?? "Erreur lors du transfert."),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
-
-
-
 
   @override
   Widget build(BuildContext context) {
-
     final user = context.watch<UserProvider>().user;
-    final currency = user.currency;
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
 
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0.4,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text(
+        iconTheme: IconThemeData(color: theme.colorScheme.onBackground),
+        title: Text(
           "Transférer",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: theme.colorScheme.onBackground,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
 
@@ -277,7 +169,7 @@ class _TransferScreenState extends State<TransferScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            // WALLET BALANCE CARD
+            // 🟪 SOLDE WALLET CARTE (adapte au thème)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(18),
@@ -297,7 +189,9 @@ class _TransferScreenState extends State<TransferScreen> {
                     duration: const Duration(milliseconds: 350),
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: highlightBalance ? Colors.green.withOpacity(0.25) : Colors.transparent,
+                      color: highlightBalance
+                          ? Colors.green.withOpacity(0.25)
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -309,53 +203,39 @@ class _TransferScreenState extends State<TransferScreen> {
                       ),
                     ),
                   ),
-
                 ],
               ),
             ),
 
             const SizedBox(height: 28),
 
-            // BENEFICIARY ID
-            const Text(
-              "ID du bénéficiaire (04-xxx-xxx)",
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-            ),
+            // ========================
+            // 🟦 INPUTS ADAPTÉS THÈME
+            // ========================
+
+            _label("ID du bénéficiaire (04-xxx-xxx)", theme),
             const SizedBox(height: 6),
-            TextField(
+            _themedInput(
               controller: idController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                hintText: "Ex: 04-123-456",
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                prefixIcon: const Icon(Icons.person_search_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+              theme: theme,
+              hint: "Ex: 04-123-456",
+              icon: Icons.person_search_outlined,
               onChanged: (value) {
-
                 final formatted = formatObpId(value);
-
                 if (formatted != value) {
                   idController.value = TextEditingValue(
                     text: formatted,
                     selection: TextSelection.collapsed(offset: formatted.length),
                   );
                 }
-                setState(() {});
-                fetchBeneficiaryName(value.trim());
+                fetchBeneficiaryName(formatted);
               },
             ),
+
             if (isCheckingUser)
               const Padding(
                 padding: EdgeInsets.only(top: 6),
-                child: Text(
-                  "Recherche...",
-                  style: TextStyle(color: Colors.blueGrey),
-                ),
+                child: Text("Recherche..."),
               )
             else if (beneficiaryName != null)
               Padding(
@@ -377,65 +257,38 @@ class _TransferScreenState extends State<TransferScreen> {
                   ),
                 ),
 
-
             const SizedBox(height: 20),
 
-            // AMOUNT FIELD
-            const Text(
-              "Montant",
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-            ),
+            _label("Montant", theme),
             const SizedBox(height: 6),
-            TextField(
+            _themedInput(
               controller: amountController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                hintText: "Ex: 10000",
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                prefixIcon: const Icon(Icons.payments_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+              theme: theme,
+              hint: "Ex: 10000",
+              icon: Icons.payments_outlined,
               onChanged: (_) => setState(() {}),
-
             ),
 
             const SizedBox(height: 20),
 
-            // NOTE FIELD
-            const Text(
-              "Motif (facultatif)",
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-            ),
+            _label("Motif (facultatif)", theme),
             const SizedBox(height: 6),
-            TextField(
+            _themedInput(
               controller: noteController,
-              keyboardType: TextInputType.text,
+              theme: theme,
+              hint: "Ex: Pour achat / remboursement",
               maxLines: 2,
-              decoration: InputDecoration(
-                hintText: "Ex: Pour l’achat / remboursement",
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
             ),
 
             const SizedBox(height: 30),
 
-            // CONTINUE BUTTON
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: isFormValid && !isLoading
                     ? () async {
-                  final confirm = await showConfirmationDialog();
-                  if (confirm) performTransfer();
+                  final confirmed = await _confirmDialog(theme);
+                  if (confirmed) performTransfer();
                 }
                     : null,
                 style: ElevatedButton.styleFrom(
@@ -456,17 +309,124 @@ class _TransferScreenState extends State<TransferScreen> {
                 )
                     : const Text(
                   "Continuer",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-
               ),
-
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 40),
           ],
         ),
       ),
     );
+  }
+
+  // ============================
+  // 🔧 WIDGETS réutilisables
+  // ============================
+
+  Widget _label(String text, ThemeData theme) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontWeight: FontWeight.w600,
+        fontSize: 15,
+        color: theme.colorScheme.onBackground,
+      ),
+    );
+  }
+
+  Widget _themedInput({
+    required TextEditingController controller,
+    required ThemeData theme,
+    required String hint,
+    IconData? icon,
+    Function(String)? onChanged,
+    int maxLines = 1,
+  }) {
+    return TextField(
+      controller: controller,
+      maxLines: maxLines,
+      style: TextStyle(color: theme.colorScheme.onBackground),
+      decoration: InputDecoration(
+        prefixIcon: icon != null
+            ? Icon(icon, color: theme.colorScheme.onBackground.withOpacity(0.7))
+            : null,
+        hintText: hint,
+        hintStyle: TextStyle(color: theme.colorScheme.onBackground.withOpacity(0.4)),
+        filled: true,
+        fillColor: theme.colorScheme.surface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+      ),
+      onChanged: onChanged,
+    );
+  }
+
+  Future<bool> _confirmDialog(ThemeData theme) async {
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) {
+        return AlertDialog(
+          backgroundColor: theme.colorScheme.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            "Confirmer le transfert",
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onBackground,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("ID bénéficiaire : ${idController.text}",
+                  style: TextStyle(color: theme.colorScheme.onBackground)),
+              const SizedBox(height: 6),
+              if (beneficiaryName != null)
+                Text("Nom : $beneficiaryName",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onBackground,
+                    )),
+              const SizedBox(height: 6),
+              Text("Montant : ${amountController.text} XOF",
+                  style: TextStyle(color: theme.colorScheme.onBackground)),
+              if (noteController.text.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    "Motif : ${noteController.text}",
+                    style: TextStyle(color: theme.colorScheme.onBackground),
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("Annuler"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryIndigo,
+              ),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("Super"),
+            )
+          ],
+        );
+      },
+    ) ??
+        false;
   }
 }
