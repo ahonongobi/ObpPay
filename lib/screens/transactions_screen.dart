@@ -45,6 +45,29 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
   }
 
 
+  String _statusToFrench(String status) {
+    switch (status.toLowerCase()) {
+      case "completed":
+      case "success":
+      case "successful":
+        return "Terminé";
+
+      case "pending":
+        return "En attente";
+
+      case "failed":
+      case "rejected":
+        return "Échoué";
+
+      case "cancelled":
+        return "Annulé";
+
+      default:
+        return "Inconnu";
+    }
+  }
+
+
   Widget _statusBadge(String status) {
     Color bg;
     Color text;
@@ -80,7 +103,8 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
-        status.toUpperCase(),
+        //status.toUpperCase(),
+        _statusToFrench(status), // translate to French as fire
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.bold,

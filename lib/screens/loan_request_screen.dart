@@ -137,17 +137,18 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
     final progress = (score / 50).clamp(0, 1).toDouble(); // 0 → 1
 
     final isEligible = provider.loanEligibility == 1;
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           "Demande d'aide/prêt",
-          style: TextStyle(color: Colors.black),
+          style: TextStyle(color: theme.colorScheme.onBackground),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         automaticallyImplyLeading: true,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: IconThemeData(color: theme.colorScheme.onBackground),
       ),
 
       body: SingleChildScrollView(
@@ -157,11 +158,12 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
           children: [
 
             // ===== Title =====
-            const Text(
+             Text(
               "Sélectionnez une catégorie",
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
+                color:  theme.colorScheme.onBackground,
               ),
             ),
             const SizedBox(height: 16),
@@ -192,14 +194,15 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
                   },
                   child: Container(
                     decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isSelected
                             ? AppColors.primaryIndigo
-                            : Colors.grey.shade300,
+                            : theme.dividerColor,
                         width: 2,
                       ),
-                      color: Colors.white,
+                      //color: Colors.white,
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -209,7 +212,7 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
                           size: 28,
                           color: isSelected
                               ? AppColors.primaryIndigo
-                              : Colors.black87,
+                              : theme.colorScheme.onBackground,
                         ),
                         const SizedBox(height: 6),
                         Text(
@@ -219,7 +222,7 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
                             fontWeight: FontWeight.w600,
                             color: isSelected
                                 ? AppColors.primaryIndigo
-                                : Colors.black87,
+                                : theme.colorScheme.onBackground,
                           ),
                         ),
                       ],
@@ -236,11 +239,12 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     "Précisez la catégorie",
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onBackground,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -249,8 +253,10 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
                     controller: otherCategoryController,
                     decoration: InputDecoration(
                       hintText: "Ex : Urgence familiale",
+                      hintStyle: TextStyle(
+                          color: theme.colorScheme.onSurface.withOpacity(0.6)),
                       filled: true,
-                      fillColor: Colors.grey.shade100,
+                      fillColor: theme.colorScheme.surface,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -265,7 +271,7 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
@@ -282,11 +288,12 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         "Votre éligibilité",
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.onBackground,
                         ),
                       ),
 
@@ -329,7 +336,7 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
                       return Container(
                         height: 12,
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade300,
+                          color: theme.dividerColor,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: LayoutBuilder(
@@ -368,7 +375,7 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
 
                     style: TextStyle(
                       fontSize: 14,
-                      color: provider.loanEligibility == 1 ? Colors.grey.shade700 : Colors.red,
+                      color: provider.loanEligibility == 1 ? theme.colorScheme.onSurface : Colors.red,
                     ),
                   ),
                 ],
@@ -383,11 +390,12 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                   Text(
                     "Montant souhaité",
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
+                      color:  theme.colorScheme.onBackground,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -398,8 +406,10 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
                       hintText: "Ex : 150 000 XOF",
+                      hintStyle: TextStyle(
+                          color: theme.colorScheme.onSurface.withOpacity(0.6)),
                       filled: true,
-                      fillColor: isEligible ? Colors.grey.shade100 : Colors.grey.shade300,
+                      fillColor: isEligible ? theme.colorScheme.surface :  theme.disabledColor.withOpacity(0.2),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -411,9 +421,9 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
                 ],
               ),
 
-            const Text(
+             Text(
               "Motif (facultatif)",
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: theme.colorScheme.onBackground,),
             ),
             const SizedBox(height: 6),
             TextField(
@@ -423,8 +433,10 @@ class _LoanRequestScreenState extends State<LoanRequestScreen> {
               maxLines: 2,
               decoration: InputDecoration(
                 hintText: "Ex: Pour l’achat / remboursement",
+                hintStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.6)),
                 filled: true,
-                fillColor: isEligible ? Colors.grey.shade100 : Colors.grey.shade300,
+                fillColor: isEligible ? theme.colorScheme.surface : theme.disabledColor.withOpacity(0.2),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
