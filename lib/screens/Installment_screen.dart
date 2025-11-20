@@ -1,129 +1,195 @@
-import 'package:flutter/material.dart';
-import 'package:obppay/themes/app_colors.dart';
+import 'dart:convert';
 
-class InstallmentScreen extends StatelessWidget {
+import 'package:flutter/material.dart';
+import 'package:obppay/services/api.dart';
+import 'package:obppay/themes/app_colors.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/user_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+
+import '../services/local_notif.dart';
+
+class InstallmentScreen extends StatefulWidget {
+  final int productId;
   final String productName;
   final String productPrice;
 
   const InstallmentScreen({
     super.key,
+    required this.productId,
     required this.productName,
     required this.productPrice,
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
+  State<InstallmentScreen> createState() => _InstallmentScreenState();
+}
 
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.3,
-        foregroundColor: Colors.black,
-        title: const Text(
-          "Paiement en tranches",
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        centerTitle: true,
-      ),
+class _InstallmentScreenState extends State<InstallmentScreen> {
+  bool loading = true;
+  List plans = [];
 
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Infos produit
-            Text(
-              productName,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+  @override
+  void initState() {
+    super.initState();
+    loadPlans();
+  }
+
+
+  Future<void> loadPlans() async {
+    final token = context.read<UserProvider>().token;
+
+    print("🔐 TOKEN → $token");
+    print("📦 PRODUCT ID → ${widget.productId}");
+
+    final url = "${Api.baseUrl}/products/${widget.productId}/installments";
+    print("🌍 URL → $url");
+
+    final res = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Authorization": "Bearer $token",
+        "Accept": "application/json",
+      },
+    );
+
+    print("📥 RAW RESPONSE → ${res.body}");
+
+    final decoded = jsonDecode(res.body);
+
+    if (decoded is List) {
+      setState(() {
+        plans = decoded;
+        loading = false;
+      });
+    } else {
+      setState(() {
+        plans = [];
+        loading = false;
+      });
+    }
+  }
+
+  Future<void> confirmAndStart(int planId, String monthlyAmount) async {
+    final theme = Theme.of(context);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) {
+        return AlertDialog(
+          backgroundColor: theme.colorScheme.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            "Confirmer le paiement",
+            style: TextStyle(color: theme.colorScheme.onBackground),
+          ),
+          content: Text(
+            "La première tranche de $monthlyAmount XOF sera débitée de votre compte ObPay.\n\nVoulez-vous continuer ?",
+            style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.8)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(
+                "Annuler",
+                style: TextStyle(color: theme.colorScheme.onSurface),
               ),
             ),
-
-            const SizedBox(height: 6),
-
-            Text(
-              "Prix total : $productPrice",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primaryIndigo,
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryIndigo,
               ),
-            ),
-
-            const SizedBox(height: 30),
-
-            const Text(
-              "Choisissez votre option de paiement :",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // 3 tranches
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: ListTile(
-                leading: const Icon(Icons.timer, size: 28),
-                title: const Text("Payer en 3 tranches"),
-                subtitle: const Text("Répartition du paiement sur 3 mois"),
-                trailing:
-                const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-                onTap: () {
-                  // TODO: logique pour paiement en 3 tranches
-                  // par ex: afficher un écran de résumé ou de confirmation
-                },
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            // 4 tranches
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: ListTile(
-                leading: const Icon(Icons.schedule, size: 28),
-                title: const Text("Payer en 4 tranches"),
-                subtitle: const Text("Répartition du paiement sur 4 mois"),
-                trailing:
-                const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-                onTap: () {
-                  // TODO: logique pour paiement en 4 tranches
-                },
-              ),
-            ),
-
-            const Spacer(),
-
-            // Bouton retour simple
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () => Navigator.pop(context),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: AppColors.primaryIndigo, width: 2),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: const Text(
-                  "Retour",
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("Oui"),
             ),
           ],
-        ),
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      startInstallment(planId);
+    }
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: Text("Paiement en tranches"),
+        backgroundColor: theme.scaffoldBackgroundColor,
+      ),
+
+      body: loading
+          ? Center(child: CircularProgressIndicator())
+          : ListView.builder(
+        padding: EdgeInsets.all(20),
+        itemCount: plans.length,
+        itemBuilder: (_, i) {
+          final p = plans[i];
+
+          return Card(
+            color: theme.colorScheme.surface,
+            child: ListTile(
+              title: Text(
+                "${p['months']} mois",
+                style: TextStyle(color: theme.colorScheme.onBackground),
+              ),
+              subtitle: Text(
+                "Montant mensuel : ${p['monthly_amount']} XOF",
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+              trailing: Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () {
+                // Start installment
+                //startInstallment(p['id']);
+                confirmAndStart(p['id'], p['monthly_amount'].toString());
+
+              },
+            ),
+          );
+        },
       ),
     );
   }
+
+  Future<void> startInstallment(int planId) async {
+    final token = context.read<UserProvider>().token;
+
+    final res = await http.post(
+      Uri.parse("${Api.baseUrl}/market/installment/start"),
+      headers: {
+        "Authorization": "Bearer $token",
+        "Accept": "application/json",
+      },
+      body: {
+        "product_id": widget.productId.toString(),
+        "plan_id": planId.toString(),
+      },
+    );
+
+    final data = jsonDecode(res.body);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(data["message"] ?? "Tranche démarrée")),
+    );
+
+    await LocalNotif.show(
+      title: "Tranche démarrée",
+      body:
+          "Vous avez commencé un paiement en tranches pour ${widget.productName}.",
+    );
+  }
 }
+

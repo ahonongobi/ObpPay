@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:obppay/screens/ProductDetailsScreen.dart';
-import 'package:obppay/themes/app_colors.dart';
+import '../services/product_service.dart';
+import '../themes/app_colors.dart';
+import 'ProductDetailsScreen.dart';
 
 class MarketplaceScreen extends StatefulWidget {
   const MarketplaceScreen({super.key});
@@ -10,85 +12,79 @@ class MarketplaceScreen extends StatefulWidget {
 }
 
 class _MarketplaceScreenState extends State<MarketplaceScreen> {
+  List categories = [];
+  List products = [];
+
   int selectedCategory = 0;
+  String searchQuery = "";
 
-  final List<String> categories = [
-    "Tous",
-    "Parcelles",
-    "Agriculture",
-    "Vivriers",
-    "Élevage"
-  ];
+  bool loadingProducts = true;
+  bool loadingCategories = true;
 
-  final List<Map<String, dynamic>> products = [
-    {
-      "name": "Parcelle agricole fertile",
-      "price": "25 000 000 F CFA",
-      "image": "assets/images/prod1.jpg",
-      "description":
-      "Parcelle agricole extrêmement fertile, idéale pour la culture de maïs, manioc, légumes et fruits. Terrain bien exposé, accessible et prêt pour exploitation immédiate."
-    },
-    {
-      "name": "Sac de riz local (25kg)",
-      "price": "18 000 F CFA",
-      "image": "assets/images/prod2.jpg",
-      "description":
-      "Riz local de haute qualité, non parfumé, cultivé dans nos régions. Très nutritif, parfait pour les familles et les restaurants."
-    },
-    {
-      "name": "Engrais biologique (50kg)",
-      "price": "12 500 F CFA",
-      "image": "assets/images/prod3.jpg",
-      "description":
-      "Engrais 100% biologique, riche en nutriments essentiels. Améliore la fertilité du sol, augmente le rendement et protège les plantes naturellement."
-    },
-    {
-      "name": "Assortiment de légumes frais",
-      "price": "5 000 F CFA",
-      "image": "assets/images/prod4.jpg",
-      "description":
-      "Panier de légumes frais directement du producteur : tomates, carottes, poivrons, oignons, aubergines. Idéal pour repas sains et équilibrés."
-    },
-    {
-      "name": "Semences de coton certifiées",
-      "price": "7 500 F CFA",
-      "image": "assets/images/prod5.jpg",
-      "description":
-      "Semences de coton de haute qualité certifiées par les autorités agricoles. Germination rapide et rendement supérieur."
-    },
-    {
-      "name": "Pot de miel 100% naturel",
-      "price": "3 500 F CFA",
-      "image": "assets/images/prod6.jpg",
-      "description":
-      "Miel pur, non chauffé, collecté de ruches traditionnelles. Riche en vitamines, minéraux et antioxydants. Un vrai boost naturel."
-    },
-    {
-      "name": "Panier de fruits exotiques",
-      "price": "10 000 F CFA",
-      "image": "assets/images/prod7.jpg",
-      "description":
-      "Panier composé d’ananas, mangues, papayes, oranges et bananes. Idéal pour desserts, jus naturels et consommation fraîche."
-    },
-    {
-      "name": "Kit d'irrigation goutte à goutte",
-      "price": "45 000 F CFA",
-      "image": "assets/images/prod8.jpg",
-      "description":
-      "Kit complet d’irrigation goutte à goutte permettant d’économiser 60% d’eau et d’augmenter le rendement. Installation simple et rapide."
-    },
-  ];
+  TextEditingController searchController = TextEditingController();
+  Timer? searchDebounce;
 
+  @override
+  void initState() {
+    super.initState();
+    loadCategories();
+  }
 
+  // ------------------------------
+  // LOAD CATEGORIES
+  // ------------------------------
+  Future<void> loadCategories() async {
+    final data = await ProductService.getCategories();
+
+    setState(() {
+      categories = [
+        {"id": null, "name": "Tous"},
+        ...data,
+      ];
+      loadingCategories = false;
+    });
+
+    loadProducts();
+  }
+
+  // ------------------------------
+  // LOAD PRODUCTS
+  // ------------------------------
+  Future<void> loadProducts() async {
+    setState(() => loadingProducts = true);
+
+    final categoryId = categories[selectedCategory]["id"];
+
+    final data = await ProductService.getProducts(
+      categoryId: categoryId,
+      search: searchQuery,
+    );
+
+    setState(() {
+      products = data;
+      loadingProducts = false;
+    });
+  }
+
+  // ------------------------------
+  // PRODUCT CARD
+  // ------------------------------
   Widget _buildProductCard(Map<String, dynamic> item) {
+    final theme = Theme.of(context);
+
+    final priceValue = double.tryParse(item["price"].toString()) ?? 0.0;
+    final priceText = "${priceValue.toStringAsFixed(0)} ${item["currency"]}";
+
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => ProductDetailsScreen(
+              id: item["id"],
               name: item["name"],
-              price: item["price"],
+              price: priceText,
               image: item["image"],
               description: item["description"] ?? "Aucune description",
             ),
@@ -97,9 +93,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: theme.dividerColor),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,15 +104,22 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             AspectRatio(
               aspectRatio: 1.2,
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-                child: Image.asset(
+                borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(14)),
+                child: Image.network(
                   item["image"],
                   fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: theme.colorScheme.surfaceVariant,
+                    alignment: Alignment.center,
+                    child: Icon(Icons.broken_image,
+                        size: 40, color: theme.colorScheme.onSurface),
+                  ),
                 ),
               ),
             ),
 
-            // CONTENT FLEXIBLE
+            // CONTENT
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(10),
@@ -127,18 +130,19 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                       item["name"],
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onBackground,
                       ),
                     ),
 
                     const SizedBox(height: 4),
 
                     Text(
-                      item["price"],
-                      style: TextStyle(
-                        fontSize: 10,
+                      priceText,
+                      style: const TextStyle(
+                        fontSize: 11,
                         fontWeight: FontWeight.w800,
                         color: AppColors.primaryIndigo,
                       ),
@@ -151,135 +155,148 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                         Icon(Icons.shopping_cart_outlined,
                             size: 20, color: AppColors.primaryIndigo),
                         const SizedBox(width: 6),
-                        const Text(
+                        Text(
                           "Acheter",
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onBackground,
+                          ),
                         ),
                       ],
                     ),
                   ],
                 ),
               ),
-            ),
+            )
           ],
         ),
       ),
     );
   }
 
-
-
-
-
+  // ------------------------------
+  // BUILD UI
+  // ------------------------------
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-        backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
 
-        appBar: AppBar(
-          elevation: 0.4,
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-          title: const Text(
-            "Market Place",
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          centerTitle: true,
+      appBar: AppBar(
+        elevation: 0.4,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onBackground,
+        title: const Text("Market Place",
+            style: TextStyle(fontWeight: FontWeight.w600)),
+        centerTitle: true,
+      ),
+
+      body: loadingCategories
+          ? const Center(child: CircularProgressIndicator())
+          : SafeArea(
+        child: Column(
+          children: [
+            // --------------------
+            // SEARCH BAR
+            // --------------------
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                controller: searchController,
+                onChanged: (value) {
+                  searchQuery = value;
+
+                  searchDebounce?.cancel();
+                  searchDebounce =
+                      Timer(const Duration(milliseconds: 400), () {
+                        loadProducts();
+                      });
+                },
+                decoration: InputDecoration(
+                  hintText: "Rechercher...",
+                  prefixIcon: Icon(Icons.search,
+                      color: theme.colorScheme.onSurface),
+                  filled: true,
+                  fillColor: theme.colorScheme.surface,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+
+            // --------------------
+            // CATEGORIES
+            // --------------------
+            SizedBox(
+              height: 40,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                scrollDirection: Axis.horizontal,
+                itemCount: categories.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (context, index) {
+                  final bool isActive = index == selectedCategory;
+
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() => selectedCategory = index);
+                      loadProducts();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? AppColors.primaryIndigo
+                            : theme.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        categories[index]["name"],
+                        style: TextStyle(
+                          color: isActive
+                              ? Colors.white
+                              : theme.colorScheme.onBackground,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // --------------------
+            // PRODUCTS GRID
+            // --------------------
+            Expanded(
+              child: loadingProducts
+                  ? const Center(child: CircularProgressIndicator())
+                  : GridView.builder(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 16),
+                gridDelegate:
+                const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  childAspectRatio: 0.60,
+                ),
+                itemCount: products.length,
+                itemBuilder: (_, i) =>
+                    _buildProductCard(products[i]),
+              ),
+            )
+          ],
         ),
-
-        body: SafeArea(
-          child: CustomScrollView(
-            slivers: [
-
-              // ----- HEADER -----
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-
-                      // SEARCH BAR
-                      TextField(
-                        decoration: InputDecoration(
-                          hintText: "Rechercher des produits...",
-                          prefixIcon: const Icon(Icons.search),
-                          filled: true,
-                          fillColor: Colors.grey.shade100,
-                          contentPadding: const EdgeInsets.all(14),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // CATEGORIES
-                      SizedBox(
-                        height: 40,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: categories.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 10),
-                          itemBuilder: (context, index) {
-                            final bool isActive = index == selectedCategory;
-
-                            return GestureDetector(
-                              onTap: () => setState(() => selectedCategory = index),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: isActive
-                                      ? AppColors.primaryIndigo
-                                      : Colors.grey.shade200,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  categories[index],
-                                  style: TextStyle(
-                                    color: isActive ? Colors.white : Colors.black87,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-
-                      const SizedBox(height: 18),
-                    ],
-                  ),
-                ),
-              ),
-
-              // ------ GRID FIXÉE DANS UNE SLIVERGRID ------
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                sliver: SliverGrid(
-                  delegate: SliverChildBuilderDelegate(
-                        (context, index) => _buildProductCard(products[index]),
-                    childCount: products.length,
-                  ),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: 0.60,
-                  ),
-                ),
-              ),
-
-              // ---- ESPACE POUR LE BOTTOM NAV ----
-              // const SliverToBoxAdapter(child: SizedBox(height: 100)),
-            ],
-          ),
-        )
-
-
+      ),
     );
   }
 }

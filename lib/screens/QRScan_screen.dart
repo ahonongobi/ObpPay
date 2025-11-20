@@ -44,6 +44,7 @@ class _QRScanScreenState extends State<QRScanScreen> {
         context,
         MaterialPageRoute(
           builder: (_) => ProductDetailsScreen(
+            id: 0,
             name: parsed["ITEM"]!,
             price: parsed["AMOUNT"]!,
             image: parsed["IMAGE"]!,

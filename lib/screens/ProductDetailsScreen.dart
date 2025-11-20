@@ -3,13 +3,16 @@ import 'package:obppay/screens/PaymentOptionsScreen.dart';
 import 'package:obppay/themes/app_colors.dart';
 
 class ProductDetailsScreen extends StatelessWidget {
+  final int id;
   final String name;
   final String price;
   final String image;
   final String description;
 
   const ProductDetailsScreen({
+
     super.key,
+    required this.id,
     required this.name,
     required this.price,
     required this.image,
@@ -18,18 +21,23 @@ class ProductDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
 
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0.3,
-        foregroundColor: Colors.black,
-        title: const Text(
-          "Détails du Produit",
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
+        foregroundColor: theme.colorScheme.onBackground,
         centerTitle: true,
+        title: Text(
+          "Détails du Produit",
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onBackground,
+          ),
+        ),
       ),
 
       body: SingleChildScrollView(
@@ -37,17 +45,24 @@ class ProductDetailsScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            // --- Image Produit ---
+            // --- IMAGE PRODUIT ---
             ClipRRect(
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(20),
                 bottomRight: Radius.circular(20),
               ),
-              child: Image.asset(
+              child: Image.network(
                 image,
                 width: double.infinity,
                 height: 280,
                 fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  height: 280,
+                  color: theme.colorScheme.surfaceVariant,
+                  alignment: Alignment.center,
+                  child: Icon(Icons.broken_image,
+                      size: 60, color: theme.colorScheme.onSurface),
+                ),
               ),
             ),
 
@@ -57,12 +72,13 @@ class ProductDetailsScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
 
-                  // Titre
+                  // Titre du produit
                   Text(
                     name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.onBackground,
                     ),
                   ),
 
@@ -71,10 +87,10 @@ class ProductDetailsScreen extends StatelessWidget {
                   // Description
                   Text(
                     description,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: Colors.black87,
                       height: 1.5,
+                      color: theme.colorScheme.onSurface.withOpacity(0.8),
                     ),
                   ),
 
@@ -84,25 +100,24 @@ class ProductDetailsScreen extends StatelessWidget {
                   Text(
                     price,
                     style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
                       color: AppColors.primaryIndigo,
                     ),
                   ),
 
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 28),
 
                   // Bouton Acheter
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        // TODO: intégrer ObPay checkout
-
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) => PaymentOptionsScreen(
+                              id: id,
                               productName: name,
                               productPrice: price,
                             ),
@@ -118,7 +133,11 @@ class ProductDetailsScreen extends StatelessWidget {
                       ),
                       child: const Text(
                         "Acheter maintenant",
-                        style: TextStyle(fontSize: 16),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
