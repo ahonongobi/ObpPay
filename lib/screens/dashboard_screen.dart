@@ -10,6 +10,7 @@ import 'package:obppay/screens/deposit_screen.dart';
 import 'package:obppay/screens/main_layout.dart';
 import 'package:obppay/screens/marketplace_screen.dart';
 import 'package:obppay/screens/transactions_screen.dart';
+import 'package:obppay/screens/withdrawal_screen.dart';
 import 'package:obppay/services/api.dart';
 import 'package:obppay/themes/app_colors.dart';
 import 'package:flutter/services.dart';
@@ -399,7 +400,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 MaterialPageRoute(builder: (_) => const  MainLayout(initialIndex: 2)),
                               );
                             },),
-                          _actionRectButton(Icons.call_made, "Retirer"),
+                          _actionRectButton(Icons.call_made, "Retirer",
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const WithdrawRequestScreen()),
+                              );
+                            },),
                           _actionRectButton(Icons.sync_alt, "Transférer",
                             onTap: () {
                               Navigator.push(

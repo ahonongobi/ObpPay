@@ -164,39 +164,50 @@ class _ObpPayCardScreenState extends State<ObpPayCardScreen>
       onPanUpdate: _onPanUpdate,
       onPanEnd: _onPanEnd,
     );
+    final theme = Theme.of(context);
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         title: const Text("Ma Carte ObpPay"),
-        backgroundColor: Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0.5,
-        foregroundColor: Colors.black,
+        foregroundColor: theme.colorScheme.onBackground,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+
             const SizedBox(height: 10),
-            card,
-            const SizedBox(height: 30),
+
+            // Carte centrée
+            Center(child: card),
+
+            const SizedBox(height: 20),
+
+            // Bouton
             SizedBox(
               width: double.infinity,
+              height: 52,
               child: ElevatedButton.icon(
                 onPressed: _saveCardAsImage,
                 icon: const Icon(Icons.download),
                 label: const Text("Enregistrer la carte en image"),
                 style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 52),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
               ),
             ),
+
+            const SizedBox(height: 20),
           ],
         ),
       ),
+
     );
   }
 }
@@ -445,6 +456,8 @@ class _ObpPayInteractiveCard extends StatelessWidget {
                 ],
               ),
 
+
+              /*
               Row(
                 children: [
                   Column(
@@ -484,7 +497,7 @@ class _ObpPayInteractiveCard extends StatelessWidget {
                     ),
                   ),
                 ],
-              ),
+              ), */
             ],
           ),
         ],

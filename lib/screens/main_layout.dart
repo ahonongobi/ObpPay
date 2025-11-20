@@ -9,6 +9,7 @@ import 'package:obppay/screens/deposit_screen.dart';
 import 'package:obppay/screens/profile_screen.dart';
 import 'package:obppay/screens/transactions_screen.dart';
 import 'package:obppay/screens/transfer_screen.dart';
+import 'package:obppay/screens/withdrawal_screen.dart';
 import 'package:obppay/themes/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:showcaseview/showcaseview.dart';
@@ -97,6 +98,7 @@ class _MainLayoutState extends State<MainLayout>
     LoanRequestScreen(),
     KycUploadScreen(),
     AllTransactionsScreen(),
+
    // ObpPayCardScreen(),
   ];
 
