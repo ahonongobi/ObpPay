@@ -1,5 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+// requires flutter_local_notifications package :)
 class LocalNotif {
   static final FlutterLocalNotificationsPlugin _notif =
   FlutterLocalNotificationsPlugin();
