@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -51,6 +52,21 @@ class UserProvider extends ChangeNotifier {
   }
 
 
+  Future<void> updateFcmToken() async {
+    String? token = await FirebaseMessaging.instance.getToken();
+    if (token == null) return;
+
+    await http.post(
+      Uri.parse("${Api.baseUrl}/user/update-fcm-token"),
+      body: {
+        "token": token,
+      },
+      headers: {"Authorization": "Bearer $token"},
+    );
+  }
+
+
+
   Future<void> loadTransactions() async {
     if (token == null) return;
 
@@ -67,6 +83,7 @@ class UserProvider extends ChangeNotifier {
   Future<void> loadUserFromApi() async {
     isLoading = true;
     notifyListeners();
+
 
     try {
       final storedToken = await storage.read(key: "token");
@@ -93,6 +110,8 @@ class UserProvider extends ChangeNotifier {
         user = UserModel.fromJson(data);
 
         await checkLoanEligibility();
+        await updateFcmToken();
+
       }
     } catch (e) {
       print("LOAD USER ERROR → $e");

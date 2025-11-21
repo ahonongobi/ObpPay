@@ -474,7 +474,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     );
                   }).toList(),
                 ),
-
+/*
                 Column(
                   children: [
                     _transactionItem(
@@ -503,6 +503,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ],
                 ),
+                */
 
                 // add beautiful Montrer toutes les transactions button
               Center(

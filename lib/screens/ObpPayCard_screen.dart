@@ -1,12 +1,16 @@
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+//import 'package:image_gallery_saver/image_gallery_saver.dart';
+//import 'package:gallery_saver/gallery_saver.dart';
 import 'package:obppay/providers/user_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:path_provider/path_provider.dart';
+
 
 class ObpPayCardScreen extends StatefulWidget {
   final String name;
@@ -104,26 +108,42 @@ class _ObpPayCardScreenState extends State<ObpPayCardScreen>
   }
 
   Future<void> _saveCardAsImage() async {
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Fonctionnalité non disponible pour le moment."),
+      ),
+    );
+    /*
     try {
       final boundary =
       _cardKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
 
       final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-      final byteData =
-      await image.toByteData(format: ui.ImageByteFormat.png);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       final pngBytes = byteData!.buffer.asUint8List();
 
-      final result = await ImageGallerySaver.saveImage(
-        Uint8List.fromList(pngBytes),
-        name: "ObpPayCard_${DateTime.now().millisecondsSinceEpoch}",
-      );
+      // 1️⃣ Chemin temporaire
+      final tempDir = await getTemporaryDirectory();
+      final filePath =
+          '${tempDir.path}/ObpPayCard_${DateTime.now().millisecondsSinceEpoch}.png';
+
+      // 2️⃣ Sauvegarde du fichier temporaire
+      final file = File(filePath);
+      await file.writeAsBytes(pngBytes);
+
+      // 3️⃣ Sauvegarde dans la galerie (plugin moderne)
+      final success = await GallerySaver.saveImage(filePath);
 
       if (!mounted) return;
 
+      // 4️⃣ Feedback utilisateur
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            result['isSuccess'] == true
+            success == true
                 ? "Carte sauvegardée dans la galerie 📸"
                 : "Impossible de sauvegarder la carte",
           ),
@@ -137,6 +157,8 @@ class _ObpPayCardScreenState extends State<ObpPayCardScreen>
         ),
       );
     }
+
+    */
   }
 
   @override

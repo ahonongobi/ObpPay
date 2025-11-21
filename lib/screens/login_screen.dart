@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:obppay/providers/user_provider.dart';
 import 'package:obppay/screens/ForgetPasswordScreen.dart';
@@ -49,12 +50,15 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = true);
 
     try {
+      final fcm = await FirebaseMessaging.instance.getToken();
+
       final response = await http.post(
         Uri.parse("${Api.baseUrl}/auth/login"),
         headers: {"Accept": "application/json"},
         body: {
           "phone": phone,
           "password": pass,
+          "fcm_token": fcm,
         },
       );
 
