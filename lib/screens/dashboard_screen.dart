@@ -208,8 +208,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final user = context.watch<UserProvider>().user;
 
     // ✅ Format here
-    final formattedBalance = NumberFormat("#,###", "fr_FR")
-        .format(user.balance);
+    //final formattedBalance = NumberFormat("#,###", "fr_FR")
+      //  .format(user.balance);
+    final formattedBalance =
+    NumberFormat("#,##0.00", "fr_FR").format(user.balance);
+
 
     final obp_id = user.obpayId;
     final currency = user.currency;
@@ -585,7 +588,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           ),
 
-          // 🔼 Floating +5 text animation
+          //  Floating +5 text animation
           if (showFloatingPoints)
             Positioned(
               top: 120,

@@ -14,6 +14,14 @@
     
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+    
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    
+    <!-- Déclare que l'app peut utiliser la biométrie -->
+    <uses-feature android:name="android.hardware.fingerprint" android:required="false" />
+    <uses-feature android:name="android.hardware.biometrics" android:required="false" />
+
 
     <application
         android:label="obppay"

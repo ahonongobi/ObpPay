@@ -70,8 +70,16 @@ class _LoginScreenState extends State<LoginScreen> {
         // TODO: store token in secure storage + user info
         final token = data["token"];
         print("🟢 TOKEN FROM LOGIN → $token");
+        // token normal
         await storage.write(key: "token", value: token);
 
+        final bioToken = data["biometric_token"];
+        await storage.write(key: "biometric_token", value: bioToken);
+        // token biometric
+        //await storage.write(key: "biometric_token", value: token);
+
+        final savedToken = await storage.read(key: "token");
+        print("🔐 TOKEN SAVED IN STORAGE → $savedToken");
 
         // Vérifions ce que voit vraiment /auth/me AVANT d'aller plus loin
         final meResp = await http.get(
@@ -85,14 +93,20 @@ class _LoginScreenState extends State<LoginScreen> {
         print("🟣 /auth/me STATUS → ${meResp.statusCode}");
         print("🟣 /auth/me BODY   → ${meResp.body}");
 
+
+        // context.read<UserProvider>().startInactivityTimer();
 // charge user depuis l'API
         await context.read<UserProvider>().loadUserFromApi();
+
+        // start the inactivity timer
 
 // goto dashboard
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const MainLayout(initialIndex: 0)),
         );
+
+        //
       } else {
         // error JSON
         final body = json.decode(response.body);
@@ -128,32 +142,75 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
+      // 1️⃣ Authentification biométrique
       bool success = await auth.authenticate(
         localizedReason: Platform.isIOS
             ? "Authentifiez-vous avec Face ID / Touch ID"
             : "Authentifiez-vous avec votre empreinte digitale",
         options: const AuthenticationOptions(
-          biometricOnly: false,
+          biometricOnly: true,
           stickyAuth: true,
         ),
       );
 
-      if (success) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const MainLayout(initialIndex: 0)),
-        );
+      if (!success) {
+        _showMessage("Échec de l'authentification biométrique.");
+        return;
       }
+
+      // 2️⃣ Lire le token stocké pour la biométrie
+      final bioToken = await storage.read(key: "biometric_token");
+      print("Token found $bioToken");
+
+      final resp = await http.post(
+        Uri.parse("${Api.baseUrl}/auth/login/biometric"),
+        headers: {"Accept": "application/json"},
+        body: {
+          "biometric_token": bioToken,
+        },
+      );
+
+      final  newToken = resp.statusCode == 200 ? json.decode(resp.body)["token"] : null;
+
+      await storage.write(key: "token", value: newToken);
+      if (newToken == null) {
+        _showMessage("Échec de l'authentification biométrique.");
+        return;
+      }
+
+      print("🔐 TOKEN LOADED FROM STORAGE → $newToken");
+
+      // 3️⃣ Appeler /auth/me pour récupérer l'utilisateur
+      final meResp = await http.get(
+        Uri.parse("${Api.baseUrl}/auth/me"),
+        headers: {
+          "Accept": "application/json",
+          "Authorization": "Bearer $newToken",
+        },
+      );
+
+      print("🟣 /auth/me STATUS → ${meResp.statusCode}");
+      print("🟣 /auth/me BODY   → ${meResp.body}");
+
+      if (meResp.statusCode != 200) {
+        _showMessage("Impossible de charger le compte. Reconnectez-vous.");
+        return;
+      }
+
+      // 4️⃣ Charger le profil dans UserProvider
+      await context.read<UserProvider>().loadUserFromApi();
+
+      // 5️⃣ Aller sur Dashboard
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const MainLayout(initialIndex: 0)),
+      );
     } catch (e) {
-      _showMessage("Échec de l'authentification biométrique.");
-      print(await auth.getAvailableBiometrics());
-      print(await auth.isDeviceSupported());
-      //print(await auth.canCheckBiometrics());
-      print(await auth.getAvailableBiometrics());
-
-
+      print("BIOMETRIC ERROR → $e");
+      _showMessage("Erreur lors de l'authentification biométrique.");
     }
   }
+
 
 
   @override
@@ -169,12 +226,16 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 20),
 
               // Logo + Title
+              /*
               Row(
-                children: const [
-                  Icon(Icons.account_balance_wallet,
-                      size: 40, color: AppColors.primaryIndigo),
-                  SizedBox(width: 8),
-                  Text(
+                children: [
+                  Image.asset(
+                    "assets/images/logo.png",
+                    width: 40,
+                    height: 40,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
                     "ObpPay",
                     style: TextStyle(
                       fontSize: 26,
@@ -183,6 +244,26 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ],
               ),
+
+              */
+              Row(
+                children: [
+                  Image.asset(
+                    "assets/images/logo.png",
+                    width: 40,
+                    height: 40,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    "ObpPay",
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+
 
               const SizedBox(height: 40),
 

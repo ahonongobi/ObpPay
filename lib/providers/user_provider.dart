@@ -6,13 +6,22 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:obppay/model/user_model.dart';
+import 'package:obppay/screens/login_screen.dart';
 import 'package:obppay/services/wallet_service.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
 import '../services/api.dart';
+import 'dart:async';
+
 
 class UserProvider extends ChangeNotifier {
   UserModel user = UserModel.empty();
+  BuildContext? appContext;
+
+  Timer? _inactiveTimer;
+  Duration inactivityDuration = const Duration(minutes: 5);
+
+
   final storage = const FlutterSecureStorage();
   String? token;
 
@@ -27,6 +36,9 @@ class UserProvider extends ChangeNotifier {
   String loanMessage = "";
 
   List<dynamic> transactions = [];
+  void setContext(BuildContext context) {
+    appContext = context;
+  }
 
   Future<void> fetchScore() async {
     if (token == null) return;
@@ -160,8 +172,33 @@ class UserProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // --------------------------------------------
+// AUTO LOGOUT AFTER INACTIVITY
+// --------------------------------------------
+  void startInactivityTimer() {
+    _inactiveTimer?.cancel();
 
-  Future<void> logout() async {
+    _inactiveTimer = Timer(const Duration(minutes: 15), () {
+      if (appContext != null) {
+        logout(appContext!);
+      }
+    });
+  }
+
+
+  void resetInactivity() {
+    startInactivityTimer();
+  }
+
+
+  void stopInactivityTimer() {
+    //inactivityTimer?.cancel();
+  }
+
+
+
+  Future<void> logout(BuildContext context) async {
+    stopInactivityTimer();
     try {
       final token = await storage.read(key: "token");
 
@@ -178,6 +215,13 @@ class UserProvider extends ChangeNotifier {
     user = UserModel.empty();
 
     notifyListeners();
+
+    // 🔥 REDIRECT ICI
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+    );
   }
 
 

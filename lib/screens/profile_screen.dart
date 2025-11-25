@@ -217,7 +217,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: TextStyle(color: Colors.red),
                     ),
                     onTap: () async {
-                      await context.read<UserProvider>().logout();
+                      await context.read<UserProvider>().logout(context);
 
                       Navigator.pushAndRemoveUntil(
                         context,

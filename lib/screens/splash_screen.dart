@@ -54,9 +54,9 @@ class _SplashScreenState extends State<SplashScreen>
           // --- LOGO CAURIS ---
           Center(
             child: Image.asset(
-              "assets/images/logo.png",   // <---- ton logo cauris transparent
-              width: 140,
-              height: 140,
+              "assets/images/logo.png",   // chemin du logo cauris
+              width: 150,
+              height: 150,
               fit: BoxFit.contain,
              // color: Colors.white,         // rend le cauris blanc stylé
             ),

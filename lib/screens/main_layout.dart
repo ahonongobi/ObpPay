@@ -10,6 +10,7 @@ import 'package:obppay/screens/profile_screen.dart';
 import 'package:obppay/screens/transactions_screen.dart';
 import 'package:obppay/screens/transfer_screen.dart';
 import 'package:obppay/screens/withdrawal_screen.dart';
+import 'package:obppay/services/inactivity_listener.dart';
 import 'package:obppay/themes/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:showcaseview/showcaseview.dart';
@@ -106,200 +107,204 @@ class _MainLayoutState extends State<MainLayout>
   Widget build(BuildContext context) {
 
     final user = context.watch<UserProvider>().user;
+    context.read<UserProvider>().setContext(context);
+    context.read<UserProvider>().startInactivityTimer();
 
     return ShowCaseWidget(
       builder: Builder(
         builder: (context) {
-          return Scaffold(
-            body: Stack(
-              children: [
+          return InactivityListener(
+            child: Scaffold(
+              body: Stack(
+                children: [
 
-                // ===== PAGE CONTENU =====
-                IndexedStack(
-                  index: currentIndex,
-                  children: pages,
-                ),
+                  // ===== PAGE CONTENU =====
+                  IndexedStack(
+                    index: currentIndex,
+                    children: pages,
+                  ),
 
-                // ===== DRAWER ANIMÉ =====
-                AnimatedBuilder(
-                  animation: _menuController,
-                  builder: (context, child) {
-                    final theme = Theme.of(context);
-                    return Stack(
-                      children: [
+                  // ===== DRAWER ANIMÉ =====
+                  AnimatedBuilder(
+                    animation: _menuController,
+                    builder: (context, child) {
+                      final theme = Theme.of(context);
+                      return Stack(
+                        children: [
 
-                        // === OVERLAY SOMBRE ===
-                        if (isMenuOpen)
-                          GestureDetector(
-                            onTap: () {
-                              _menuController.reverse();
-                              isMenuOpen = false;
-                              setState(() {});
-                            },
-                            child: Container(
-                              color: theme.colorScheme.onBackground.withOpacity(0.3),
+                          // === OVERLAY SOMBRE ===
+                          if (isMenuOpen)
+                            GestureDetector(
+                              onTap: () {
+                                _menuController.reverse();
+                                isMenuOpen = false;
+                                setState(() {});
+                              },
+                              child: Container(
+                                color: theme.colorScheme.onBackground.withOpacity(0.3),
+                              ),
+                            ),
+
+                          // === SLIDE MENU ===
+                          SlideTransition(
+                            position: _slideAnimation,
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: Container(
+                                width: MediaQuery.of(context).size.width * 0.65,
+                                height: double.infinity,
+                                decoration:  BoxDecoration(
+                                  color: theme.colorScheme.surface,
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(28),
+                                    bottomLeft: Radius.circular(28),
+                                  ),
+                                ),
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+
+                                      const SizedBox(height: 80),
+
+                                      menuItem(Icons.home_outlined, "Accueil", () {
+                                        setState(() => currentIndex = 0);
+                                      }),
+
+                                      menuItem(Icons.storefront_outlined, "Boutique", () {
+                                        setState(() => currentIndex = 1);
+                                      }),
+
+                                      menuItem(Icons.call_received, "Déposer", () {
+                                        setState(() => currentIndex = 2);
+                                      }),
+
+                                      menuItem(Icons.sync_alt, "Transfert", () {
+                                        setState(() => currentIndex = 3);
+                                      }),
+
+                                      menuItem(Icons.support_agent, "Prêt/Aide", () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (_) => const LoanRequestScreen()),
+                                        );
+                                      }),
+
+                                      menuItem(Icons.person_outline, "Profil", () {
+                                        setState(() => currentIndex = 4);
+                                      }),
+
+                                      menuItem(Icons.verified_user, "Verifier ID", () {
+
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (_) => const KycUploadScreen()),
+                                        );
+
+                                      }),
+
+                                      menuItem(Icons.credit_card, "ObpPay Card", () {
+
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (_) => ObpPayCardScreen(
+                                            name: user.fullName,
+                                            obpId: user.obpayId,
+                                            balance: user.balance.toString(),
+                                            expiry: user.registeredAt,
+                                            cvv: user.cvv,
+                                          )),
+                                        );
+
+                                      }),
+
+
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
+                        ],
+                      );
+                    },
+                  ),
 
-                        // === SLIDE MENU ===
-                        SlideTransition(
-                          position: _slideAnimation,
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: Container(
-                              width: MediaQuery.of(context).size.width * 0.65,
-                              height: double.infinity,
-                              decoration:  BoxDecoration(
-                                color: theme.colorScheme.surface,
-                                borderRadius: BorderRadius.only(
-                                  topLeft: Radius.circular(28),
-                                  bottomLeft: Radius.circular(28),
-                                ),
-                              ),
-                              child: SingleChildScrollView(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
+                  // ===== HAMBURGER FLOATING =====
+                  Positioned(
+                    right: 0,
+                    top: MediaQuery.of(context).size.height * 0.50,
 
-                                    const SizedBox(height: 80),
-
-                                    menuItem(Icons.home_outlined, "Accueil", () {
-                                      setState(() => currentIndex = 0);
-                                    }),
-
-                                    menuItem(Icons.storefront_outlined, "Boutique", () {
-                                      setState(() => currentIndex = 1);
-                                    }),
-
-                                    menuItem(Icons.call_received, "Déposer", () {
-                                      setState(() => currentIndex = 2);
-                                    }),
-
-                                    menuItem(Icons.sync_alt, "Transfert", () {
-                                      setState(() => currentIndex = 3);
-                                    }),
-
-                                    menuItem(Icons.support_agent, "Prêt/Aide", () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(builder: (_) => const LoanRequestScreen()),
-                                      );
-                                    }),
-
-                                    menuItem(Icons.person_outline, "Profil", () {
-                                      setState(() => currentIndex = 4);
-                                    }),
-
-                                    menuItem(Icons.verified_user, "Verifier ID", () {
-
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(builder: (_) => const KycUploadScreen()),
-                                      );
-
-                                    }),
-
-                                    menuItem(Icons.credit_card, "ObpPay Card", () {
-
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(builder: (_) => ObpPayCardScreen(
-                                          name: user.fullName,
-                                          obpId: user.obpayId,
-                                          balance: user.balance.toString(),
-                                          expiry: user.registeredAt,
-                                          cvv: user.cvv,
-                                        )),
-                                      );
-
-                                    }),
-
-
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-
-                // ===== HAMBURGER FLOATING =====
-                Positioned(
-                  right: 0,
-                  top: MediaQuery.of(context).size.height * 0.50,
-
-                  child: Showcase(
-                    key: menuKey,
-                    title: "Menu",
-                    description: "Accédez rapidement aux fonctionnalités ici.",
-                    child: GestureDetector(
-                      onTap: () {
-                        if (isMenuOpen) {
-                          _menuController.reverse();
-                          isMenuOpen = false;
-                        } else {
-                          _menuController.forward();
-                          isMenuOpen = true;
-                        }
-                        setState(() {});
-                      },
-                      child: AnimatedBuilder(
-                        animation: _rotationAnimation,
-                        builder: (context, child) {
-                          return Transform.rotate(
-                            angle: _rotationAnimation.value,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 10, horizontal: 6),
-                              decoration: BoxDecoration(
-                                color: AppColors.primaryIndigo,
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(20),
-                                  bottomLeft: Radius.circular(20),
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.menu,
-                                size: 18,
-                                color: Colors.white,
-                              ),
-                            ),
-                          );
+                    child: Showcase(
+                      key: menuKey,
+                      title: "Menu",
+                      description: "Accédez rapidement aux fonctionnalités ici.",
+                      child: GestureDetector(
+                        onTap: () {
+                          if (isMenuOpen) {
+                            _menuController.reverse();
+                            isMenuOpen = false;
+                          } else {
+                            _menuController.forward();
+                            isMenuOpen = true;
+                          }
+                          setState(() {});
                         },
+                        child: AnimatedBuilder(
+                          animation: _rotationAnimation,
+                          builder: (context, child) {
+                            return Transform.rotate(
+                              angle: _rotationAnimation.value,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 10, horizontal: 6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryIndigo,
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(20),
+                                    bottomLeft: Radius.circular(20),
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.menu,
+                                  size: 18,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ),
-                ),
 
-              ],
-            ),
+                ],
+              ),
 
-            // ====== NAV BAR ======
-            bottomNavigationBar: BottomNavigationBar(
-              currentIndex: currentIndex,
-              selectedItemColor: AppColors.primaryIndigo,
-              unselectedItemColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-              showUnselectedLabels: true,
-              backgroundColor: Theme.of(context).colorScheme.surface,
-              type: BottomNavigationBarType.fixed,
-              onTap: (i) {
-                setState(() => currentIndex = i);
-              },
-              items: const [
-                BottomNavigationBarItem(
-                    icon: Icon(Icons.home_outlined), label: "Accueil"),
-                BottomNavigationBarItem(
-                    icon: Icon(Icons.storefront_outlined), label: "Boutique"),
-                BottomNavigationBarItem(
-                    icon: Icon(Icons.call_received), label: "Déposer"),
-                BottomNavigationBarItem(
-                    icon: Icon(Icons.sync_alt), label: "Transfert"),
-                BottomNavigationBarItem(
-                    icon: Icon(Icons.person_outline), label: "Profil"),
-              ],
+              // ====== NAV BAR ======
+              bottomNavigationBar: BottomNavigationBar(
+                currentIndex: currentIndex,
+                selectedItemColor: AppColors.primaryIndigo,
+                unselectedItemColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                showUnselectedLabels: true,
+                backgroundColor: Theme.of(context).colorScheme.surface,
+                type: BottomNavigationBarType.fixed,
+                onTap: (i) {
+                  setState(() => currentIndex = i);
+                },
+                items: const [
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.home_outlined), label: "Accueil"),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.storefront_outlined), label: "Boutique"),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.call_received), label: "Déposer"),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.sync_alt), label: "Transfert"),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.person_outline), label: "Profil"),
+                ],
+              ),
             ),
           );
         },

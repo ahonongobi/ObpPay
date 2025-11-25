@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:obppay/screens/contact.dart';
 import 'package:obppay/screens/edit_profile_screen.dart';
+import 'package:obppay/screens/faq.dart';
+import 'package:obppay/screens/privacy.dart';
+import 'package:obppay/screens/terms.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 
@@ -74,7 +78,7 @@ class SettingsScreen extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // 🎨 APPARENCE
+          //  APPARENCE
           _sectionTitle(context, "Apparence"),
 
           SwitchListTile(
@@ -91,23 +95,40 @@ class SettingsScreen extends StatelessWidget {
           // ⚖️ LÉGAL
           _sectionTitle(context, "Légal"),
 
-          ListTile(
-            leading: Icon(Icons.article_outlined,
-                color: theme.colorScheme.onBackground),
-            title: Text("Conditions d’utilisation",
-                style: TextStyle(color: theme.colorScheme.onBackground)),
-            trailing: Icon(Icons.chevron_right,
-                color: theme.colorScheme.onBackground),
+          InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TermsScreen()),
+              );
+            },
+            child: ListTile(
+              leading: Icon(Icons.article_outlined,
+                  color: theme.colorScheme.onBackground),
+              title: Text("Conditions d’utilisation",
+                  style: TextStyle(color: theme.colorScheme.onBackground)),
+              trailing: Icon(Icons.chevron_right,
+                  color: theme.colorScheme.onBackground),
+            ),
           ),
 
-          ListTile(
-            leading: Icon(Icons.privacy_tip_outlined,
-                color: theme.colorScheme.onBackground),
-            title: Text("Politique de confidentialité",
-                style: TextStyle(color: theme.colorScheme.onBackground)),
-            trailing: Icon(Icons.chevron_right,
-                color: theme.colorScheme.onBackground),
+          InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PrivacyScreen()),
+              );
+            },
+            child: ListTile(
+              leading: Icon(Icons.privacy_tip_outlined,
+                  color: theme.colorScheme.onBackground),
+              title: Text("Politique de confidentialité",
+                  style: TextStyle(color: theme.colorScheme.onBackground)),
+              trailing: Icon(Icons.chevron_right,
+                  color: theme.colorScheme.onBackground),
+            ),
           ),
+
 
           const SizedBox(height: 20),
 
@@ -115,22 +136,30 @@ class SettingsScreen extends StatelessWidget {
           _sectionTitle(context, "Aide"),
 
           ListTile(
-            leading:
-            Icon(Icons.help_outline, color: theme.colorScheme.onBackground),
-            title: Text("FAQ",
-                style: TextStyle(color: theme.colorScheme.onBackground)),
-            trailing: Icon(Icons.chevron_right,
-                color: theme.colorScheme.onBackground),
+            leading: Icon(Icons.help_outline, color: theme.colorScheme.onBackground),
+            title: Text("FAQ", style: TextStyle(color: theme.colorScheme.onBackground)),
+            trailing: Icon(Icons.chevron_right, color: theme.colorScheme.onBackground),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FaqScreen()),
+              );
+            },
           ),
 
           ListTile(
-            leading: Icon(Icons.support_agent,
-                color: theme.colorScheme.onBackground),
-            title: Text("Contact support",
-                style: TextStyle(color: theme.colorScheme.onBackground)),
-            trailing: Icon(Icons.chevron_right,
-                color: theme.colorScheme.onBackground),
+            leading: Icon(Icons.support_agent, color: theme.colorScheme.onBackground),
+            title:
+            Text("Contact support", style: TextStyle(color: theme.colorScheme.onBackground)),
+            trailing: Icon(Icons.chevron_right, color: theme.colorScheme.onBackground),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ContactSupportScreen()),
+              );
+            },
           ),
+
         ],
       ),
     );

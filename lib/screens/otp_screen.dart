@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:obppay/screens/NewPassword_Screen.dart';
 import 'package:obppay/screens/RegisterSuccess_Screen.dart';
 import 'dart:async';
 import 'package:obppay/themes/app_colors.dart';
@@ -62,9 +63,15 @@ class _OtpScreenState extends State<OtpScreen> {
       });
     }
 
-    if(currentIndex == 4){
-      verifyOtp();
+
+    if (currentIndex == 4) {
+      if (widget.purpose == "register") {
+        verifyOtp();
+      } else {
+        verifyOtpReset();
+      }
     }
+
   }
 
   void onDelete() {
@@ -129,6 +136,7 @@ class _OtpScreenState extends State<OtpScreen> {
     }
 
     if (widget.purpose == "reset") {
+      await verifyOtpReset();
       //Navigator.pushReplacement(
         //context,
         //MaterialPageRoute(builder: (_) => const NewPasswordScreen()),
@@ -154,6 +162,43 @@ class _OtpScreenState extends State<OtpScreen> {
   Future<void> verifyOtp() async {
     await registerUser();
   }
+
+
+  Future<void> verifyOtpReset() async {
+    try {
+      final response = await http.post(
+        Uri.parse("${Api.baseUrl}/auth/verify-reset-otp"),
+        headers: { "Accept": "application/json" },
+
+        body: {
+          "phone": widget.phone,
+          "otp": code.join(),
+        },
+      );
+
+      print("VERIFY RESET OTP → ${response.body}");
+
+      if (response.statusCode == 200) {
+        // Aller au nouvel écran
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => NewPasswordScreen(
+            phone: widget.phone!,
+            otp: code.join(),
+          )),
+        );
+      } else {
+        final body = json.decode(response.body);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(body["message"] ?? "OTP incorrect")));
+      }
+    } catch (e) {
+      print("Erreur RESET OTP → $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Erreur réseau")));
+    }
+  }
+
 
 
   @override

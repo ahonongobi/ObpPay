@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:obppay/screens/otp_screen.dart';
+import 'package:provider/provider.dart';
 import 'package:obppay/themes/app_colors.dart';
+import '../providers/theme_provider.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:obppay/services/api.dart';
+
 
 class ForgetPasswordScreen extends StatefulWidget {
   const ForgetPasswordScreen({super.key});
@@ -14,43 +20,35 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
+    final theme = Theme.of(context); // 🔥 Supporte dark mode automatiquement
 
+    return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        title: const Text(
-          "Mot de passe oublié",
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
+        title: const Text("Mot de passe oublié"),
       ),
 
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
 
-              const SizedBox(height: 20),
-
-              const Text(
+              Text(
                 "Récupérer votre mot de passe",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
               ),
 
               const SizedBox(height: 8),
 
-              const Text(
-                "Entrez votre numéro ObPay ou votre téléphone.\nNous vous enverrons un code de vérification.",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
+              Text(
+                "Entrez votre numéro de téléphone. "
+                    "Nous vous enverrons un code de vérification.",
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.textTheme.bodySmall?.color,
                 ),
               ),
 
@@ -60,10 +58,10 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                 controller: phoneController,
                 keyboardType: TextInputType.phone,
                 decoration: InputDecoration(
-                  labelText: "Numéro ObPay ou Téléphone",
+                  labelText: "Téléphone",
                   prefixIcon: const Icon(Icons.phone_android),
                   filled: true,
-                  fillColor: Colors.grey.shade100,
+                  fillColor: theme.cardColor.withOpacity(0.5),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide.none,
@@ -76,13 +74,51 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // TODO: Envoyer OTP
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (_) => const OtpScreen(purpose: "register")),
+                  onPressed: () async {
+                    final phone = phoneController.text.trim();
+
+                    if (phone.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Veuillez entrer un numéro."),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                      return;
+                    }
+
+                    // 🔥 Appel API forgot-password
+                    final response = await http.post(
+                      Uri.parse("${Api.baseUrl}/auth/forgot-password"),
+                      headers: {
+                        "Accept": "application/json",
+                      },
+                      body: {"phone": phone},
                     );
 
+                    print("FORGOT RESPONSE → ${response.body}");
+
+                    if (response.statusCode == 200) {
+                      // 🎉 Naviguer vers OTP screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => OtpScreen(
+                            purpose: "reset",
+                            phone: phone,
+                          ),
+                        ),
+                      );
+                    } else {
+                      final body = json.decode(response.body);
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(body["message"] ?? "Erreur"),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryIndigo,
@@ -92,29 +128,27 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                     ),
                   ),
                   child: const Text(
-                    "Continuer",
-                    style: TextStyle(fontSize: 16),
+                    "Envoyer le code",
+                    style: TextStyle(fontSize: 16, color: Colors.white),
                   ),
                 ),
               ),
+
 
               const SizedBox(height: 20),
 
               Center(
                 child: TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text(
+                  child: Text(
                     "Retour",
                     style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black54,
+                      color: theme.textTheme.bodySmall?.color,
                       decoration: TextDecoration.underline,
                     ),
                   ),
                 ),
               ),
-
-              const SizedBox(height: 40),
             ],
           ),
         ),
